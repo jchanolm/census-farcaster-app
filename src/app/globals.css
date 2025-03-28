@@ -1,0 +1,53 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --blue-primary: #0057ff;
+  --blue-bright: #00a0ff;
+  --text-muted-dark: #aaa;
+  --text-muted-light: #666;
+  --bg-dark: #0a0a10;
+  --bg-light: #f0f0f4;
+  --border-dark: rgba(60, 60, 70, 0.4);
+  --border-light: rgba(60, 60, 70, 0.15);
+}
+
+* {
+  margin: 0; 
+  padding: 0; 
+  box-sizing: border-box;
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: #000;
+    color: #fff;
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  body {
+    background-color: #eaeaef;
+    color: #111;
+  }
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.animate-blink {
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+.animate-pulse {
+  animation: pulse 1.5s infinite;
+}
