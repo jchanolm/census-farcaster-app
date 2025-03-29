@@ -113,17 +113,6 @@ export default function SearchInterface() {
   return (
     <div className={`w-full min-h-screen ${darkMode ? 'bg-black' : 'bg-[#e5e5e8]'} ${textColor} relative flex flex-col items-center`}>
       {/* Header with user wallet info */}
-      <header className={`fixed top-0 left-0 right-0 flex justify-between items-center px-6 md:px-14 py-5 z-50 ${darkMode ? 'bg-gradient-to-b from-black to-transparent' : 'bg-gradient-to-b from-[#e5e5e8] to-transparent'}`}>
-        <div className="text-xl font-bold tracking-wider">QUOTIENT</div>
-        {user?.wallet?.address && (
-          <div className={`${bgColorWithOpacity} px-3 py-1.5 rounded-full flex items-center space-x-2 border ${borderColor}`}>
-            <div className="w-2 h-2 bg-[#0057ff] rounded-full animate-pulse"></div>
-            <span className="text-sm font-mono text-[#0057ff]">
-              {truncateAddress(user.wallet.address)}
-            </span>
-          </div>
-        )}
-      </header>
       
       {/* Main search area */}
       <main className="pt-32 px-6 md:px-14 w-full max-w-4xl mx-auto">
