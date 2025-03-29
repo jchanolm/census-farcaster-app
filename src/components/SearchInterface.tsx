@@ -83,12 +83,10 @@ export default function SearchInterface() {
   };
 
   // Get dynamic background and text colors based on Palantir grey vibe
-  const bgColor = darkMode ? 'bg-[#1a1a22]' : 'bg-[#f2f2f5]';
   const bgColorWithOpacity = darkMode ? 'bg-black bg-opacity-80' : 'bg-[#f2f2f5] bg-opacity-90';
   const borderColor = darkMode ? 'border-gray-700' : 'border-gray-300';
   const textColor = darkMode ? 'text-white' : 'text-[#333]';
   const textMutedColor = darkMode ? 'text-[#aaa]' : 'text-[#777]';
-  const inputBgColor = darkMode ? 'bg-[#0a0a10]' : 'bg-white';
   const inputBgWithOpacity = darkMode ? 'bg-[#0a0a10] bg-opacity-70' : 'bg-white bg-opacity-80';
   const placeholderColor = darkMode ? 'placeholder-[#666]' : 'placeholder-[#999]';
   const hoverBgColor = darkMode ? 'hover:bg-[#0a0a15]' : 'hover:bg-[#f8f8fa]';
