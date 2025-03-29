@@ -3,7 +3,6 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { usePrivy } from '@privy-io/react-auth';
 
 // Define a type for search results
 interface SearchResult {
@@ -15,7 +14,6 @@ interface SearchResult {
 }
 
 export default function SearchInterface() {
-  const { user } = usePrivy();
   const [query, setQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
