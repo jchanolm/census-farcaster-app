@@ -3,13 +3,21 @@
 import { useState, useRef, useEffect } from 'react';
 import { usePrivy } from '@privy-io/react-auth';
 
+// Define a type for search results
+interface SearchResult {
+  username: string;
+  bio: string;
+  location?: string;
+  score: number;
+}
+
 export default function SearchInterface() {
   const { user } = usePrivy();
   const [query, setQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [displayedQuery, setDisplayedQuery] = useState('');
-  const [results, setResults] = useState<any[]>([]);
+  const [results, setResults] = useState<SearchResult[]>([]);
   const [darkMode, setDarkMode] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -199,8 +207,7 @@ export default function SearchInterface() {
             {/* Results summary */}
             <div className={`p-4 border-b ${getBorderColor()} ${getTextColor()}`}>
               <p className="text-sm">
-                <strong>{results.length} builder profiles</strong> matched <strong>"{query}"</strong>. 
-                Results are based on embedding similarity search.
+                <strong>{results.length} builder profiles</strong> matched <strong>&quot;{query}&quot;</strong>. 
               </p>
             </div>
             
