@@ -9,6 +9,7 @@ interface SearchResult {
   bio: string;
   location?: string;
   score: number;
+  affiliations?: string[];
 }
 
 export default function SearchInterface() {
@@ -82,12 +83,15 @@ export default function SearchInterface() {
   };
 
   // Get dynamic background and text colors based on Palantir grey vibe
-  const getBgColor = () => darkMode ? 'bg-[#1a1a22]/80' : 'bg-[#f2f2f5]/90';
-  const getBorderColor = () => darkMode ? 'border-[rgba(60,60,70,0.4)]' : 'border-[rgba(60,60,70,0.2)]';
-  const getTextColor = () => darkMode ? 'text-white' : 'text-[#333]';
-  const getTextMutedColor = () => darkMode ? 'text-[#aaa]' : 'text-[#777]';
-  const getInputBgColor = () => darkMode ? 'bg-[#0a0a10]/70' : 'bg-white/80';
-  const getPlaceholderColor = () => darkMode ? 'placeholder-[#666]' : 'placeholder-[#999]';
+  const bgColor = darkMode ? 'bg-[#1a1a22]' : 'bg-[#f2f2f5]';
+  const bgColorWithOpacity = darkMode ? 'bg-black bg-opacity-80' : 'bg-[#f2f2f5] bg-opacity-90';
+  const borderColor = darkMode ? 'border-gray-700' : 'border-gray-300';
+  const textColor = darkMode ? 'text-white' : 'text-[#333]';
+  const textMutedColor = darkMode ? 'text-[#aaa]' : 'text-[#777]';
+  const inputBgColor = darkMode ? 'bg-[#0a0a10]' : 'bg-white';
+  const inputBgWithOpacity = darkMode ? 'bg-[#0a0a10] bg-opacity-70' : 'bg-white bg-opacity-80';
+  const placeholderColor = darkMode ? 'placeholder-[#666]' : 'placeholder-[#999]';
+  const hoverBgColor = darkMode ? 'hover:bg-[#0a0a15]' : 'hover:bg-[#f8f8fa]';
 
   // Score visualization
   const renderScoreGauge = (score: number) => {
@@ -99,7 +103,7 @@ export default function SearchInterface() {
       <div className="flex items-center space-x-2">
         <div className="relative w-16 h-1.5 bg-[#e0e0e5] rounded-full overflow-hidden">
           <div 
-            className="absolute top-0 left-0 h-full bg-gradient-to-r from-[#0057ff]/70 to-[#0057ff]"
+            className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-500 to-blue-600"
             style={{ width: `${normalizedScore}%` }}
           ></div>
         </div>
@@ -109,12 +113,12 @@ export default function SearchInterface() {
   };
 
   return (
-    <div className={`w-full min-h-screen ${darkMode ? 'bg-black' : 'bg-[#e5e5e8]'} ${getTextColor()} relative flex flex-col items-center`}>
+    <div className={`w-full min-h-screen ${darkMode ? 'bg-black' : 'bg-[#e5e5e8]'} ${textColor} relative flex flex-col items-center`}>
       {/* Header with user wallet info */}
-      <header className={`fixed top-0 left-0 right-0 flex justify-between items-center px-6 md:px-14 py-5 z-50 ${darkMode ? 'bg-gradient-to-b from-black/90 to-transparent' : 'bg-gradient-to-b from-[#e5e5e8]/90 to-transparent'}`}>
+      <header className={`fixed top-0 left-0 right-0 flex justify-between items-center px-6 md:px-14 py-5 z-50 ${darkMode ? 'bg-gradient-to-b from-black to-transparent' : 'bg-gradient-to-b from-[#e5e5e8] to-transparent'}`}>
         <div className="text-xl font-bold tracking-wider">QUOTIENT</div>
         {user?.wallet?.address && (
-          <div className={`${getBgColor()} px-3 py-1.5 rounded-full flex items-center space-x-2 border ${getBorderColor()}`}>
+          <div className={`${bgColorWithOpacity} px-3 py-1.5 rounded-full flex items-center space-x-2 border ${borderColor}`}>
             <div className="w-2 h-2 bg-[#0057ff] rounded-full animate-pulse"></div>
             <span className="text-sm font-mono text-[#0057ff]">
               {truncateAddress(user.wallet.address)}
@@ -127,17 +131,17 @@ export default function SearchInterface() {
       <main className="pt-32 px-6 md:px-14 w-full max-w-4xl mx-auto">
         <div className="mb-6 text-center">
           <h1 className="text-3xl md:text-4xl font-bold mb-2">Builder Intelligence</h1>
-          <p className={`text-sm ${getTextMutedColor()}`}>Query the global builder constellation</p>
+          <p className={`text-sm ${textMutedColor}`}>Query the global builder constellation</p>
         </div>
         
         {/* Search box */}
-        <div className={`w-full max-w-3xl mx-auto ${getBgColor()} rounded-lg border ${getBorderColor()} p-5 backdrop-blur-sm`}>
+        <div className={`w-full max-w-3xl mx-auto ${bgColorWithOpacity} rounded-lg border ${borderColor} p-5 backdrop-blur-sm`}>
           <div className="flex items-center mb-3">
             <svg className="w-4 h-4 mr-2 opacity-80" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="11" cy="11" r="8"></circle>
               <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
             </svg>
-            <div className={`text-xs uppercase tracking-wider ${getTextMutedColor()} font-semibold font-mono`}>Builder Query</div>
+            <div className={`text-xs uppercase tracking-wider ${textMutedColor} font-semibold font-mono`}>Builder Query</div>
           </div>
           
           <form onSubmit={handleSearch} className="mb-3">
@@ -149,7 +153,7 @@ export default function SearchInterface() {
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="e.g. Find Frame developers building on Base..."
                 disabled={isSearching}
-                className={`w-full ${getInputBgColor()} border ${getBorderColor()} rounded p-4 ${getTextColor()} focus:outline-none focus:border-[#0057ff] ${getPlaceholderColor()} font-mono text-sm`}
+                className={`w-full ${inputBgWithOpacity} border ${borderColor} rounded p-4 ${textColor} focus:outline-none focus:border-[#0057ff] ${placeholderColor} font-mono text-sm`}
               />
               <button
                 type="submit"
@@ -162,12 +166,12 @@ export default function SearchInterface() {
           </form>
           
           {/* Search status */}
-          <div className={`flex items-center mt-3 text-xs ${getTextMutedColor()} font-mono`}>
+          <div className={`flex items-center mt-3 text-xs ${textMutedColor} font-mono`}>
             {isSearching ? (
               <>
                 <span className="w-2 h-2 bg-[#0057ff] rounded-full mr-2 animate-pulse"></span>
                 <span>Scanning builder constellation...</span>
-                <span className={`ml-2 font-mono ${getTextColor()}`}>{displayedQuery}<span className="animate-blink">_</span></span>
+                <span className={`ml-2 font-mono ${textColor}`}>{displayedQuery}<span className="animate-blink">_</span></span>
               </>
             ) : isCompleted ? (
               <>
@@ -176,7 +180,7 @@ export default function SearchInterface() {
               </>
             ) : (
               <>
-                <span className="w-2 h-2 bg-[#666] rounded-full mr-2"></span>
+                <span className="w-2 h-2 bg-gray-500 rounded-full mr-2"></span>
                 <span>Ready for query.</span>
               </>
             )}
@@ -185,7 +189,7 @@ export default function SearchInterface() {
         
         {/* Results Section */}
         {isCompleted && results.length > 0 && (
-          <div className={`mt-8 max-w-3xl mx-auto ${getBgColor()} rounded-lg border ${getBorderColor()} backdrop-blur-sm overflow-hidden`}>
+          <div className={`mt-8 max-w-3xl mx-auto ${bgColorWithOpacity} rounded-lg border ${borderColor} backdrop-blur-sm overflow-hidden`}>
             {/* Results header with count */}
             <div className="flex justify-between items-center p-4 border-b border-inherit">
               <div className="flex items-center">
@@ -195,28 +199,27 @@ export default function SearchInterface() {
                 </span>
               </div>
               <div className="flex">
-                <button className="text-xs font-mono text-[#0057ff] border border-[#0057ff]/30 bg-[#0057ff]/5 px-2 py-1 rounded mr-2 hover:bg-[#0057ff]/10 transition-colors">
+                <button className="text-xs font-mono text-[#0057ff] border border-blue-500 border-opacity-30 bg-blue-500 bg-opacity-5 px-2 py-1 rounded mr-2 hover:bg-blue-500 hover:bg-opacity-10 transition-colors">
                   EXPORT
                 </button>
-                <button className="text-xs font-mono text-[#0057ff] border border-[#0057ff]/30 bg-[#0057ff]/5 px-2 py-1 rounded hover:bg-[#0057ff]/10 transition-colors">
+                <button className="text-xs font-mono text-[#0057ff] border border-blue-500 border-opacity-30 bg-blue-500 bg-opacity-5 px-2 py-1 rounded hover:bg-blue-500 hover:bg-opacity-10 transition-colors">
                   FILTER
                 </button>
               </div>
             </div>
             
             {/* Results summary */}
-            <div className={`p-4 border-b ${getBorderColor()} ${getTextColor()}`}>
+            <div className={`p-4 border-b ${borderColor} ${textColor}`}>
               <p className="text-sm">
                 <strong>{results.length} builder profiles</strong> matched <strong>&quot;{query}&quot;</strong>. 
               </p>
             </div>
             
             {/* Results table */}
-            
             <div className="overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className={`text-xs font-mono uppercase tracking-wider ${getTextMutedColor()} border-b ${getBorderColor()}`}>
+                  <thead className={`text-xs font-mono uppercase tracking-wider ${textMutedColor} border-b ${borderColor}`}>
                     <tr>
                       <th className="px-4 py-3 text-left">Username</th>
                       <th className="px-4 py-3 text-left">Bio</th>
@@ -227,7 +230,7 @@ export default function SearchInterface() {
                   </thead>
                   <tbody className="divide-y divide-inherit">
                     {results.map((result, index) => (
-                      <tr key={index} className={`hover:${darkMode ? 'bg-[#0057ff]/5' : 'bg-[#0057ff]/5'} transition-colors`}>
+                      <tr key={index} className={hoverBgColor}>
                         <td className="px-4 py-4 font-mono text-[#0057ff] text-sm">
                           {result.username}
                         </td>

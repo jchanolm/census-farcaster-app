@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@farcaster/frame-sdk": "^0.0.31",
     "@privy-io/react-auth": "^2.7.2",
     "neo4j-driver": "^5.28.1",
     "next": "14.2.26",
