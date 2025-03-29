@@ -3,13 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --no-warnings",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
   },
   "dependencies": {
     "@privy-io/react-auth": "^2.7.2",
+    "neo4j-driver": "^5.28.1",
     "next": "14.2.26",
     "react": "^18",
     "react-dom": "^18"
