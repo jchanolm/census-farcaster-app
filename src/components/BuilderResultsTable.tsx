@@ -10,14 +10,25 @@ interface BuilderCredentials {
   farcasterRewards: number;
   smartContracts: number;
   framesDeployed: number;
-  ogInteractions: number;
   channelsModerated: string[];
+}
+
+interface Cast {
+  hash: string;
+  text: string;
+  timestamp: string;
+  likeCount: number;
+  recastCount: number;
+  replyCount: number;
+  parentUrl?: string;
+  authorFid?: string;
 }
 
 interface SearchResult {
   username: string;
   bio: string;
   location?: string;
+  credentialCount: number
   pfpUrl?: string;
   accounts: LinkedAccount[];
   builderCreds: BuilderCredentials;
@@ -50,20 +61,59 @@ export default function BuilderResultsTable({ results, query, darkMode }: Builde
     });
   };
   
-  // Score visualization
+  // Score visualization using carets based on relative score range
   const renderScoreGauge = (score: number) => {
-    // Normalize score to 0-100 range for visualization
-    const normalizedScore = Math.min(Math.max(score * 100, 0), 100);
+    // Find min and max scores from all results
+    const minScore = Math.min(...results.map(r => r.score));
+    const maxScore = Math.max(...results.map(r => r.score));
+    
+    // Calculate the relative position in the range (0 to 1)
+    // If min and max are the same, default to 1 (prevent division by zero)
+    const relativePosition = maxScore === minScore 
+      ? 1 
+      : (score - minScore) / (maxScore - minScore);
+    
+    // Determine number of carets based on relative position (1-5)
+    // More continuous scale with 5 possible values
+    let caretCount;
+    if (relativePosition >= 0.9) {
+      caretCount = 5; // Top 10% of scores: 5 carets
+    } else if (relativePosition >= 0.7) {
+      caretCount = 4; // Next 20% of scores: 4 carets
+    } else if (relativePosition >= 0.5) {
+      caretCount = 3; // Middle 20% of scores: 3 carets
+    } else if (relativePosition >= 0.3) {
+      caretCount = 2; // Next 20% of scores: 2 carets
+    } else {
+      caretCount = 1; // Bottom 30% of scores: 1 caret
+    }
+    // Calculate opacity based on relative position (0.4 to 1.0)
+    const opacity = 0.4 + relativePosition * 0.6;
+    
+    // Determine color intensity based on relative position
+    const getBlueShade = () => {
+      if (relativePosition >= 0.8) return 'text-blue-700'; // Dark blue for high scores
+      if (relativePosition >= 0.4) return 'text-blue-500'; // Medium blue for medium scores
+      return 'text-blue-300'; // Light blue for low scores
+    };
     
     return (
-      <div className="flex items-center space-x-2">
-        <div className="relative w-16 h-1.5 bg-[#e0e0e5] rounded-full overflow-hidden">
-          <div 
-            className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-500 to-blue-600"
-            style={{ width: `${normalizedScore}%` }}
-          ></div>
+      <div className="flex items-center">
+        <div className="flex space-x-1">
+          {[...Array(caretCount)].map((_, i) => (
+            <svg 
+              key={i}
+              className={`h-4 w-4 ${getBlueShade()}`} 
+              style={{ opacity: opacity }}
+              xmlns="http://www.w3.org/2000/svg" 
+              viewBox="0 0 24 24" 
+              fill="currentColor"
+            >
+              <path d="M12 2L4 12h6v10h4V12h6L12 2z" />
+            </svg>
+          ))}
         </div>
-        <span className="text-xs font-mono">{score.toFixed(3)}</span>
+        <span className="ml-2 text-xs font-mono">{score.toFixed(3)}</span>
       </div>
     );
   };
@@ -88,6 +138,74 @@ export default function BuilderResultsTable({ results, query, darkMode }: Builde
     navigator.clipboard.writeText(text);
   };
   
+  // Format date to readable string
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (e) {
+      return 'Unknown date';
+    }
+  };
+  
+  // Truncate text with ellipsis
+  const truncateText = (text: string, maxLength: number = 200) => {
+    if (!text) return '';
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
+  };
+  
+  // Render a cast card
+  const renderCastCard = (cast: Cast, index: number) => {
+    return (
+      <div key={index} className={`p-3 rounded-md ${badgeBgColor} mb-2 border-l-2 border-[#0057ff]`}>
+        <div className="text-sm mb-2">{truncateText(cast.text)}</div>
+        <div className="flex justify-between items-center text-xs text-gray-500">
+          <div className="flex space-x-4">
+            <span className="flex items-center">
+              <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
+              {formatNumber(cast.likeCount)}
+            </span>
+            <span className="flex items-center">
+              <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              {formatNumber(cast.recastCount)}
+            </span>
+            <span className="flex items-center">
+              <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+              </svg>
+              {formatNumber(cast.replyCount)}
+            </span>
+          </div>
+          <div className="font-mono">{formatDate(cast.timestamp)}</div>
+        </div>
+        {cast.parentUrl && (
+          <div className="mt-2 text-xs">
+            <a 
+              href={cast.parentUrl} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="text-[#0057ff] hover:underline"
+            >
+              View on Warpcast →
+            </a>
+          </div>
+        )}
+      </div>
+    );
+  };
+  
   // Helper to render expandable row
   const renderExpandableRow = (result: SearchResult, index: number) => {
     const isExpanded = expandedRows[result.username] || false;
@@ -107,6 +225,9 @@ export default function BuilderResultsTable({ results, query, darkMode }: Builde
         ? result.builderCreds.channelsModerated 
         : []
     };
+    
+    // Normalize score to 0-100 range
+    const normalizedScore = Math.min(Math.max(Math.round(result.score * 100), 0), 100);
     
     return (
       <>
@@ -152,46 +273,27 @@ export default function BuilderResultsTable({ results, query, darkMode }: Builde
             <div className="line-clamp-2">{result.bio}</div>
           </td>
           
-          {/* Builder Credentials Summary */}
+          {/* Credentials Count */}
           <td className="px-4 py-4">
-            <div className="flex flex-wrap gap-2">
-              {builderCreds.smartContracts > 0 && (
-                <span className={`text-xs px-2 py-1 rounded ${badgeBgColor} font-mono`}>
-                  {formatNumber(builderCreds.smartContracts)} Contracts
-                </span>
-              )}
-              {builderCreds.framesDeployed > 0 && (
-                <span className={`text-xs px-2 py-1 rounded ${badgeBgColor} font-mono`}>
-                  {formatNumber(builderCreds.framesDeployed)} Frames
-                </span>
-              )}
-              {result.accounts.length > 0 && (
-                <span className={`text-xs px-2 py-1 rounded ${badgeBgColor} font-mono`}>
-                  {result.accounts.length} Accounts
-                </span>
-              )}
+            <div className="flex items-center">
+              <span className={`text-sm font-medium ${textColor}`}>
+                {formatNumber(result.credentialCount)}
+              </span>
             </div>
           </td>
           
           {/* Relevance Score */}
           <td className="px-4 py-4">
-            {renderScoreGauge(result.score)}
-          </td>
-          
-          {/* Expand/Collapse */}
-          <td className="px-4 py-4 text-center">
-            <button 
-              className={`text-xs font-mono w-8 h-8 flex items-center justify-center rounded-full border ${isExpanded ? 'bg-[#0057ff] text-white border-[#0057ff]' : `border-gray-300 ${textColor}`}`}
-            >
-              {isExpanded ? '−' : '+'}
-            </button>
+            <div className="flex flex-col">
+              {renderScoreGauge(result.score)}
+            </div>
           </td>
         </tr>
         
         {/* Expanded detail row - only visible when expanded */}
         {isExpanded && (
           <tr key={`detail-${index}`} className={`${expandedBgColor} border-b ${borderColor}`}>
-            <td colSpan={5} className="px-6 py-4">
+            <td colSpan={4} className="px-6 py-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Left column */}
                 <div>
@@ -233,10 +335,7 @@ export default function BuilderResultsTable({ results, query, darkMode }: Builde
                       </div>
                     </div>
                   )}
-                </div>
-                
-                {/* Right column */}
-                <div>
+                  
                   {/* Linked accounts */}
                   {result.accounts && result.accounts.length > 0 && (
                     <div className="mb-4">
@@ -251,11 +350,11 @@ export default function BuilderResultsTable({ results, query, darkMode }: Builde
                           >
                             <div className="flex items-center">
                               <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center mr-2">
-                                <span className="text-gray-500 text-xs">{account.platform.charAt(0).toUpperCase()}</span>
+                                <span className="text-gray-500 text-xs">{account.platform && account.platform.charAt(0).toUpperCase() || '-'}</span>
                               </div>
                               <div>
                                 <div className="text-sm font-medium">{account.username}</div>
-                                <div className="text-xs text-gray-500">{account.platform}</div>
+                                <div className="text-xs text-gray-500">{account.platform || 'Unknown'}</div>
                               </div>
                             </div>
                             <button 
@@ -273,14 +372,26 @@ export default function BuilderResultsTable({ results, query, darkMode }: Builde
                     </div>
                   )}
                 </div>
+                
+                {/* Right column - can be used for casts or other data */}
+                <div>
+                  {/* Add content for right column here if needed */}
+                </div>
               </div>
+              
               {/* Actions row */}
               <div className="mt-4 pt-4 border-t border-gray-200 flex justify-end space-x-2">
+                <a
+                  href={`https://warpcast.com/${result.username}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="text-xs font-mono border border-[#0057ff] text-[#0057ff] px-3 py-2 rounded hover:bg-[#0057ff] hover:text-white transition-colors"
+                >
+                  VIEW PROFILE
+                </a>
                 <button className="text-xs font-mono bg-[#0057ff] text-white px-3 py-2 rounded">
                   CONNECT
-                </button>
-                <button className="text-xs font-mono border border-[#0057ff] text-[#0057ff] px-3 py-2 rounded">
-                  VIEW PROFILE
                 </button>
               </div>
             </td>
@@ -326,9 +437,8 @@ export default function BuilderResultsTable({ results, query, darkMode }: Builde
               <tr>
                 <th className="px-4 py-3 text-left">Builder</th>
                 <th className="px-4 py-3 text-left">Bio</th>
-                <th className="px-4 py-3 text-left">Credentials</th>
+                <th className="px-4 py-3 text-left">Linked Accounts</th>
                 <th className="px-4 py-3 text-left">Relevance</th>
-                <th className="px-4 py-3 text-center w-16">Expand</th>
               </tr>
             </thead>
             <tbody>

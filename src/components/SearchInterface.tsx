@@ -4,15 +4,15 @@
 
 import { useState, useRef, useEffect } from 'react';
 import BuilderResultsTable from './BuilderResultsTable';
-import DataScreeningAnimation from './DataScreeningAnimation';
 
 export default function SearchInterface() {
   const [query, setQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
-  const [displayedQuery, setDisplayedQuery] = useState('');
   const [results, setResults] = useState([]);
   const [darkMode, setDarkMode] = useState(false);
+  const [typewriterText, setTypewriterText] = useState('');
+  const [typewriterIndex, setTypewriterIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Set light mode by default for Palantir grey vibe
@@ -27,16 +27,17 @@ export default function SearchInterface() {
     }
   }, []);
 
-  // Typewriter effect for query
+  // Typewriter effect when searching
   useEffect(() => {
-    if (isSearching && displayedQuery.length < query.length) {
+    if (isSearching && typewriterIndex < query.length) {
       const timer = setTimeout(() => {
-        setDisplayedQuery(query.substring(0, displayedQuery.length + 1));
-      }, 30);
+        setTypewriterText(prev => prev + query.charAt(typewriterIndex));
+        setTypewriterIndex(prev => prev + 1);
+      }, 100);
       
       return () => clearTimeout(timer);
     }
-  }, [displayedQuery, query, isSearching]);
+  }, [isSearching, typewriterIndex, query]);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,7 +45,8 @@ export default function SearchInterface() {
     
     setIsSearching(true);
     setIsCompleted(false);
-    setDisplayedQuery('');
+    setTypewriterText('');
+    setTypewriterIndex(0);
     
     try {
       const response = await fetch('/api/search', {
@@ -58,12 +60,9 @@ export default function SearchInterface() {
       const data = await response.json();
       console.log('Search API response:', data);
       
-      // Delay to show the animation for a minimum time
-      setTimeout(() => {
-        setResults(data.results || []);
-        setIsSearching(false);
-        setIsCompleted(true);
-      }, 2500); // Minimum 2.5 seconds to show animation
+      setResults(data.results || []);
+      setIsSearching(false);
+      setIsCompleted(true);
       
     } catch (error) {
       console.error('Search error:', error);
@@ -107,8 +106,7 @@ export default function SearchInterface() {
       {/* Main search area */}
       <main className="pt-16 px-6 md:px-14 w-full max-w-5xl mx-auto">
         <div className="mb-6 text-center">
-          <h1 className="text-3xl md:text-4xl font-bold mb-2">Builder Intelligence</h1>
-          <p className={`text-sm ${textMutedColor}`}>Query the global builder constellation</p>
+          <h1 className="text-3xl md:text-4xl font-bold mb-2">Quotient</h1>
         </div>
         
         {/* Search box */}
@@ -118,7 +116,7 @@ export default function SearchInterface() {
               <circle cx="11" cy="11" r="8"></circle>
               <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
             </svg>
-            <div className={`text-xs uppercase tracking-wider ${textMutedColor} font-semibold font-mono`}>Builder Query</div>
+            <div className={`text-xs uppercase tracking-wider ${textMutedColor} font-semibold font-mono`}>Query</div>
           </div>
           
           <form onSubmit={handleSearch} className="mb-3">
@@ -142,13 +140,20 @@ export default function SearchInterface() {
             </div>
           </form>
           
+          {/* Typewriter effect - more subtle */}
+          {isSearching && (
+            <div className="mt-3 mb-2 font-mono text-sm text-opacity-70 text-[#6b8eff] border-l-2 border-[#6b8eff] border-opacity-50 pl-3">
+              <span className="inline-block opacity-80">{typewriterText}</span>
+              <span className="inline-block w-1.5 h-3.5 bg-[#6b8eff] ml-0.5 animate-pulse opacity-60"></span>
+            </div>
+          )}
+          
           {/* Search status */}
           <div className={`flex items-center mt-3 text-xs ${textMutedColor} font-mono`}>
             {isSearching ? (
               <>
-                <span className="w-2 h-2 bg-[#0057ff] rounded-full mr-2 animate-pulse"></span>
+                <span className="w-2 h-2 bg-[#0057ff] rounded-full mr-2"></span>
                 <span>Scanning builder constellation...</span>
-                <span className={`ml-2 font-mono ${textColor}`}>{displayedQuery}<span className="animate-blink">_</span></span>
               </>
             ) : isCompleted ? (
               <>
@@ -163,18 +168,6 @@ export default function SearchInterface() {
             )}
           </div>
         </div>
-        
-        {/* Data Screening Animation */}
-        {isSearching && (
-          <div className={`w-full max-w-3xl mx-auto ${bgColorWithOpacity} rounded-lg border ${borderColor} backdrop-blur-sm overflow-hidden`}>
-            <div className="p-2 border-b border-inherit">
-              <div className={`text-xs uppercase tracking-wider ${textMutedColor} font-mono`}>
-                Builder Data Processing
-              </div>
-            </div>
-            <DataScreeningAnimation isActive={isSearching} darkMode={darkMode} />
-          </div>
-        )}
         
         {/* Results Section */}
         {isCompleted && results.length > 0 && (
