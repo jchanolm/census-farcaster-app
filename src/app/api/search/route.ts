@@ -3,9 +3,6 @@ import { runQuery } from '@/lib/neo4j';
 
 export const dynamic = 'force-dynamic';
 
-// Read from environment variable
-const DEEPINFRA_API_KEY = process.env.DEEPINFRA_API_KEY || '';
-
 export async function POST(request: NextRequest) {
   try {
     const { query } = await request.json();
@@ -16,33 +13,11 @@ export async function POST(request: NextRequest) {
 
     console.log(`Processing query: ${query}`);
     
-    // Call DeepInfra API to generate BGE-M3 embeddings
-    const response = await fetch('https://api.deepinfra.com/v1/openai/embeddings', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${DEEPINFRA_API_KEY}`
-      },
-      body: JSON.stringify({
-        input: query,
-        model: 'BAAI/bge-m3',
-        encoding_format: 'float'
-      })
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`DeepInfra API error: ${response.status} ${errorText}`);
-    }
-
-    const data = await response.json();
-    const embedding = data.data[0].embedding;
-    
     // The new enhanced search query with fulltext and builder credibility metrics
     const enhancedQuery = `
       // Match accounts directly from the fulltext index
       CALL db.index.fulltext.queryNodes('text', $query) YIELD node, score as directScore
-      WHERE (node:Account:Warpcast OR node:Cast) AND directScore > 0.75
+      WHERE (node:Account:Warpcast:RealAssNigga OR node:Cast) AND directScore > 0.75
       
       // Handle both account and cast nodes
       WITH CASE 
@@ -158,7 +133,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ 
       query, 
       results,
-      embedding,
       recordCount: records.length
     });
     
