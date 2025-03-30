@@ -3,22 +3,15 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-
-// Define a type for search results
-interface SearchResult {
-  username: string;
-  bio: string;
-  location?: string;
-  score: number;
-  affiliations?: string[];
-}
+import BuilderResultsTable from './BuilderResultsTable';
+import DataScreeningAnimation from './DataScreeningAnimation';
 
 export default function SearchInterface() {
   const [query, setQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [displayedQuery, setDisplayedQuery] = useState('');
-  const [results, setResults] = useState<SearchResult[]>([]);
+  const [results, setResults] = useState([]);
   const [darkMode, setDarkMode] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -26,12 +19,6 @@ export default function SearchInterface() {
   useEffect(() => {
     setDarkMode(false);
   }, []);
-
-  // Truncate wallet address for display
-  const truncateAddress = (address: string | undefined) => {
-    if (!address) return '';
-    return `${address.slice(0, 6)}...${address.slice(-4)}`;
-  };
 
   // Focus the input on component mount
   useEffect(() => {
@@ -71,15 +58,22 @@ export default function SearchInterface() {
       const data = await response.json();
       console.log('Search API response:', data);
       
-      // Use the embedding data from the API response
-      setResults(data.results || []);
-      setIsSearching(false);
-      setIsCompleted(true);
+      // Delay to show the animation for a minimum time
+      setTimeout(() => {
+        setResults(data.results || []);
+        setIsSearching(false);
+        setIsCompleted(true);
+      }, 2500); // Minimum 2.5 seconds to show animation
       
     } catch (error) {
       console.error('Search error:', error);
       setIsSearching(false);
     }
+  };
+
+  // Toggle dark/light mode
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode);
   };
 
   // Get dynamic background and text colors based on Palantir grey vibe
@@ -89,40 +83,36 @@ export default function SearchInterface() {
   const textMutedColor = darkMode ? 'text-[#aaa]' : 'text-[#777]';
   const inputBgWithOpacity = darkMode ? 'bg-[#0a0a10] bg-opacity-70' : 'bg-white bg-opacity-80';
   const placeholderColor = darkMode ? 'placeholder-[#666]' : 'placeholder-[#999]';
-  const hoverBgColor = darkMode ? 'hover:bg-[#0a0a15]' : 'hover:bg-[#f8f8fa]';
-
-  // Score visualization
-  const renderScoreGauge = (score: number) => {
-    // Normalize score to 0-100 range for visualization
-    // Assuming scores are between 0 and 1
-    const normalizedScore = Math.min(Math.max(score * 100, 0), 100);
-    
-    return (
-      <div className="flex items-center space-x-2">
-        <div className="relative w-16 h-1.5 bg-[#e0e0e5] rounded-full overflow-hidden">
-          <div 
-            className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-500 to-blue-600"
-            style={{ width: `${normalizedScore}%` }}
-          ></div>
-        </div>
-        <span className="text-xs font-mono">{score.toFixed(3)}</span>
-      </div>
-    );
-  };
 
   return (
     <div className={`w-full min-h-screen ${darkMode ? 'bg-black' : 'bg-[#e5e5e8]'} ${textColor} relative flex flex-col items-center`}>
-      {/* Header with user wallet info */}
+      {/* Header with theme toggle */}
+      <header className="w-full py-4 px-6 flex justify-end">
+        <button
+          onClick={toggleDarkMode}
+          className={`p-2 rounded-full ${darkMode ? 'bg-gray-800' : 'bg-gray-200'}`}
+        >
+          {darkMode ? (
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+              <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" />
+            </svg>
+          ) : (
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+              <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+            </svg>
+          )}
+        </button>
+      </header>
       
       {/* Main search area */}
-      <main className="pt-32 px-6 md:px-14 w-full max-w-4xl mx-auto">
+      <main className="pt-16 px-6 md:px-14 w-full max-w-5xl mx-auto">
         <div className="mb-6 text-center">
           <h1 className="text-3xl md:text-4xl font-bold mb-2">Builder Intelligence</h1>
           <p className={`text-sm ${textMutedColor}`}>Query the global builder constellation</p>
         </div>
         
         {/* Search box */}
-        <div className={`w-full max-w-3xl mx-auto ${bgColorWithOpacity} rounded-lg border ${borderColor} p-5 backdrop-blur-sm`}>
+        <div className={`w-full max-w-3xl mx-auto ${bgColorWithOpacity} rounded-lg border ${borderColor} p-5 backdrop-blur-sm mb-6`}>
           <div className="flex items-center mb-3">
             <svg className="w-4 h-4 mr-2 opacity-80" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="11" cy="11" r="8"></circle>
@@ -174,74 +164,25 @@ export default function SearchInterface() {
           </div>
         </div>
         
+        {/* Data Screening Animation */}
+        {isSearching && (
+          <div className={`w-full max-w-3xl mx-auto ${bgColorWithOpacity} rounded-lg border ${borderColor} backdrop-blur-sm overflow-hidden`}>
+            <div className="p-2 border-b border-inherit">
+              <div className={`text-xs uppercase tracking-wider ${textMutedColor} font-mono`}>
+                Builder Data Processing
+              </div>
+            </div>
+            <DataScreeningAnimation isActive={isSearching} darkMode={darkMode} />
+          </div>
+        )}
+        
         {/* Results Section */}
         {isCompleted && results.length > 0 && (
-          <div className={`mt-8 max-w-3xl mx-auto ${bgColorWithOpacity} rounded-lg border ${borderColor} backdrop-blur-sm overflow-hidden`}>
-            {/* Results header with count */}
-            <div className="flex justify-between items-center p-4 border-b border-inherit">
-              <div className="flex items-center">
-                <span className="text-sm font-mono font-medium">MATCHED BUILDERS</span>
-                <span className="ml-2 bg-[#0057ff] text-white text-xs px-2 py-0.5 rounded-sm font-mono">
-                  {results.length}
-                </span>
-              </div>
-              <div className="flex">
-                <button className="text-xs font-mono text-[#0057ff] border border-blue-500 border-opacity-30 bg-blue-500 bg-opacity-5 px-2 py-1 rounded mr-2 hover:bg-blue-500 hover:bg-opacity-10 transition-colors">
-                  EXPORT
-                </button>
-                <button className="text-xs font-mono text-[#0057ff] border border-blue-500 border-opacity-30 bg-blue-500 bg-opacity-5 px-2 py-1 rounded hover:bg-blue-500 hover:bg-opacity-10 transition-colors">
-                  FILTER
-                </button>
-              </div>
-            </div>
-            
-            {/* Results summary */}
-            <div className={`p-4 border-b ${borderColor} ${textColor}`}>
-              <p className="text-sm">
-                <strong>{results.length} builder profiles</strong> matched <strong>&quot;{query}&quot;</strong>. 
-              </p>
-            </div>
-            
-            {/* Results table */}
-            <div className="overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className={`text-xs font-mono uppercase tracking-wider ${textMutedColor} border-b ${borderColor}`}>
-                    <tr>
-                      <th className="px-4 py-3 text-left">Username</th>
-                      <th className="px-4 py-3 text-left">Bio</th>
-                      <th className="px-4 py-3 text-left">Location</th>
-                      <th className="px-4 py-3 text-left">Relevance</th>
-                      <th className="px-4 py-3 text-left">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-inherit">
-                    {results.map((result, index) => (
-                      <tr key={index} className={hoverBgColor}>
-                        <td className="px-4 py-4 font-mono text-[#0057ff] text-sm">
-                          {result.username}
-                        </td>
-                        <td className="px-4 py-4 text-sm">
-                          {result.bio}
-                        </td>
-                        <td className="px-4 py-4 text-sm">
-                          {result.location || <span className="text-gray-500 font-mono text-xs bg-gray-100 px-1 py-0.5 rounded">UNK</span>}
-                        </td>
-                        <td className="px-4 py-4">
-                          {renderScoreGauge(result.score)}
-                        </td>
-                        <td className="px-4 py-4">
-                          <button className="text-xs font-mono text-[#0057ff] border border-[#0057ff] px-2 py-1 rounded hover:bg-[#0057ff] hover:text-white transition-colors">
-                            CONNECT
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
+          <BuilderResultsTable 
+            results={results} 
+            query={query} 
+            darkMode={darkMode} 
+          />
         )}
       </main>
     </div>
