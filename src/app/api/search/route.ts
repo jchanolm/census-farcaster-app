@@ -16,13 +16,19 @@ export async function POST(request: Request) {
     // Basic query that just returns nodes that match the query
     const basicQuery = `
       // Match from fulltext index
-      CALL db.index.fulltext.queryNodes('text', $query) YIELD node as accountOrCast, score
+      CALL db.index.fulltext.queryNodes('text', $query) YIELD node , score
       WHERE (node:Account:Warpcast OR node:Cast) AND score > 0.7
-      ORDER BY SCORE DESC LIMIT 150
-      WITH accountOrCast, score
-      CALL db.index.fulltext.queryNodes('wcAccounts', $query) YIELD node as account, score
-      WHERE (account:RealAssNigga) and score > .8
-      ORDER BY SCORE DESC LIMIT 20
+      ORDER BY score DESC LIMIT 150
+      RETURN 
+        CASE WHEN node:Account THEN "account" ELSE "cast" END as nodeType,
+        CASE WHEN node:Account THEN node.username ELSE null END as username,
+        CASE WHEN node:Cast THEN node.text ELSE null END as text,
+        CASE WHEN node:Account THEN node.bio ELSE null END as bio,
+        score
+      UNION 
+      CALL db.index.fulltext.queryNodes('wcAccounts', $query) YIELD node, score
+      WHERE (node:RealAssNigga) and score > .8
+      ORDER BY score DESC LIMIT 20
       // Return basic node info
       RETURN 
         CASE WHEN node:Account THEN "account" ELSE "cast" END as nodeType,
