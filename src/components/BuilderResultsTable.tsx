@@ -128,29 +128,6 @@ export default function BuilderResultsTable({ results, query, darkMode }: Builde
     navigator.clipboard.writeText(text);
   };
   
-  // Format date to readable string
-  const formatDate = (dateString: string) => {
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'short', 
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    } catch (e) {
-      return 'Unknown date';
-    }
-  };
-  
-  // Truncate text with ellipsis
-  const truncateText = (text: string, maxLength: number = 200) => {
-    if (!text) return '';
-    if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength) + '...';
-  };
-  
   // Helper to render expandable row
   const renderExpandableRow = (result: SearchResult, index: number) => {
     const isExpanded = expandedRows[result.username] || false;
