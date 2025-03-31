@@ -1,7 +1,26 @@
 import React from 'react';
 import Image from 'next/image';
 
-export default function AgentResults({ agentResponse, darkMode }) {
+interface ResultItem {
+  username: string;
+  pfpUrl?: string;
+  location?: string;
+  relevanceContext: string;
+  bio?: string;
+}
+
+interface AgentResponseData {
+  summary: string;
+  keyTakeaways: string[];
+  processedResults: ResultItem[];
+}
+
+interface AgentResultsProps {
+  agentResponse: AgentResponseData | null;
+  darkMode: boolean;
+}
+
+export default function AgentResults({ agentResponse, darkMode }: AgentResultsProps) {
   if (!agentResponse || !agentResponse.processedResults) return null;
   
   // Styling based on theme
@@ -63,10 +82,27 @@ export default function AgentResults({ agentResponse, darkMode }) {
                     className="object-cover"
                     unoptimized={true}
                     onError={(e) => {
-                      e.currentTarget.src = `https://avatar.vercel.sh/${result.username}`;
+                      const target = e.currentTarget as HTMLImageElement;
+                      target.src = `https://avatar.vercel.sh/${result.username}`;
                     }}
                   />
                 </div>
+            </div>
+            
+            {/* Relevance context */}
+            <div className="mt-2 text-sm border-l-2 border-blue-500 pl-3 py-1">
+              {result.relevanceContext}
+            </div>
+            
+            {/* Bio */}
+            <div className="mt-3 text-xs text-gray-500">
+              {result.bio}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
               ) : (
                 <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center mr-3">
                   <span className="text-gray-500 text-xs">{result.username.charAt(0).toUpperCase()}</span>
@@ -94,20 +130,3 @@ export default function AgentResults({ agentResponse, darkMode }) {
                   VIEW
                 </a>
               </div>
-            </div>
-            
-            {/* Relevance context */}
-            <div className="mt-2 text-sm border-l-2 border-blue-500 pl-3 py-1">
-              {result.relevanceContext}
-            </div>
-            
-            {/* Bio */}
-            <div className="mt-3 text-xs text-gray-500">
-              {result.bio}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}

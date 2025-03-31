@@ -1,6 +1,18 @@
 import { useState } from 'react';
 
-export default function AgentInsights({ agentResponse, darkMode, isLoading }) {
+interface AgentResponse {
+  summary: string;
+  keyTakeaways: string[];
+  processedResults: any[];
+}
+
+interface AgentInsightsProps {
+  agentResponse: AgentResponse | null;
+  darkMode: boolean;
+  isLoading: boolean;
+}
+
+export default function AgentInsights({ agentResponse, darkMode, isLoading }: AgentInsightsProps) {
   const [expanded, setExpanded] = useState(true);
   
   if (!agentResponse && !isLoading) return null;

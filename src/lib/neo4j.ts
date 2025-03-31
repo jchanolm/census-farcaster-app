@@ -10,7 +10,7 @@ const driver = neo4j.driver(
 );
 
 // Function to run Cypher queries
-export async function runQuery(cypher: string, params = {}) {
+export async function runQuery(cypher: string, params: Record<string, any> = {}) {
   const session = driver.session();
   try {
     const result = await session.run(cypher, params);

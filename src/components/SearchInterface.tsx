@@ -4,18 +4,44 @@ import { useState, useRef, useEffect } from 'react';
 import AgentResults from './AgentResults';
 import { processWithAgent } from '@/lib/agentHandler';
 
+type LogEntry = {
+  message: string;
+  type: 'info' | 'error' | 'success' | 'warning';
+  timestamp: Date;
+};
+
+type SearchResult = {
+  username: string;
+  bio?: string;
+  text?: string;
+  nodeType?: string;
+  score: number;
+  location?: string;
+  accounts?: any[];
+  builderCreds?: {
+    smartContracts?: number;
+    framesDeployed?: number;
+    farcasterRewards?: number;
+    channelsModerated?: string[];
+  };
+  relevantCasts?: {text: string}[];
+  credentialCount?: number;
+  pfpUrl?: string;
+};
+
 export default function SearchInterface() {
   const [query, setQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [isAgentProcessing, setIsAgentProcessing] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
-  const [agentResponse, setAgentResponse] = useState(null);
+  const [agentResponse, setAgentResponse] = useState<any>(null);
   const [darkMode, setDarkMode] = useState(false);
   const [typewriterText, setTypewriterText] = useState('');
   const [typewriterIndex, setTypewriterIndex] = useState(0);
-  const [logs, setLogs] = useState([]);
-  const inputRef = useRef(null);
-  const logsEndRef = useRef(null);
+  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [results, setResults] = useState<SearchResult[]>([]);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const logsEndRef = useRef<HTMLDivElement>(null);
 
   // Set light mode by default for Palantir grey vibe
   useEffect(() => {
@@ -49,11 +75,11 @@ export default function SearchInterface() {
   }, [isSearching, typewriterIndex, query]);
 
   // Add a log entry
-  const addLog = (message, type = 'info') => {
+  const addLog = (message: string, type: 'info' | 'error' | 'success' | 'warning' = 'info') => {
     setLogs(prev => [...prev, { message, type, timestamp: new Date() }]);
   };
 
-  const handleSearch = async (e) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!query.trim() || isSearching) return;
     
@@ -112,7 +138,8 @@ export default function SearchInterface() {
           addLog(`✅ Agent analysis complete - found ${agentData.processedResults?.length || 0} relevant results`, 'success');
           setAgentResponse(agentData);
         } catch (error) {
-          addLog(`❌ Agent processing error: ${error.message}`, 'error');
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          addLog(`❌ Agent processing error: ${errorMessage}`, 'error');
           console.error('Agent processing error:', error);
         } finally {
           setIsAgentProcessing(false);
@@ -122,7 +149,8 @@ export default function SearchInterface() {
       }
       
     } catch (error) {
-      addLog(`❌ Search error: ${error.message}`, 'error');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      addLog(`❌ Search error: ${errorMessage}`, 'error');
       console.error('Search error:', error);
       setIsSearching(false);
     }

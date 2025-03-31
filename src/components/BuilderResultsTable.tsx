@@ -1,8 +1,38 @@
 import { useState } from 'react';
 import Image from 'next/image';
 
-export default function BuilderResultsTable({ results, query, darkMode }) {
-  const [expandedRows, setExpandedRows] = useState({});
+interface Account {
+  username: string;
+  platform?: string;
+}
+
+interface BuilderCreds {
+  smartContracts?: number;
+  framesDeployed?: number;
+  farcasterRewards?: number;
+  channelsModerated?: string[];
+}
+
+interface SearchResult {
+  username: string;
+  bio?: string;
+  location?: string;
+  pfpUrl?: string;
+  score: number;
+  credentialCount?: number;
+  accounts?: Account[];
+  builderCreds?: BuilderCreds;
+  relevanceContext?: string;
+}
+
+interface BuilderResultsTableProps {
+  results: SearchResult[];
+  query: string;
+  darkMode: boolean;
+}
+
+export default function BuilderResultsTable({ results, query, darkMode }: BuilderResultsTableProps) {
+  const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
   
   // Styling based on theme
   const bgColorWithOpacity = darkMode ? 'bg-black bg-opacity-80' : 'bg-[#f2f2f5] bg-opacity-90';
@@ -15,7 +45,7 @@ export default function BuilderResultsTable({ results, query, darkMode }) {
   const relevanceBgColor = darkMode ? 'bg-[#0a0a20]' : 'bg-[#f8f8ff]';
   
   // Toggle expanded row
-  const toggleRowExpand = (username) => {
+  const toggleRowExpand = (username: string) => {
     setExpandedRows({
       ...expandedRows,
       [username]: !expandedRows[username]
@@ -23,7 +53,7 @@ export default function BuilderResultsTable({ results, query, darkMode }) {
   };
   
   // Score visualization using carets based on relative score range
-  const renderScoreGauge = (score) => {
+  const renderScoreGauge = (score: number) => {
     // Find min and max scores from all results
     const minScore = Math.min(...results.map(r => r.score));
     const maxScore = Math.max(...results.map(r => r.score));
@@ -80,7 +110,7 @@ export default function BuilderResultsTable({ results, query, darkMode }) {
   };
   
   // Format large numbers with commas and handle undefined/null/NaN values
-  const formatNumber = (num) => {
+  const formatNumber = (num?: number | string | null) => {
     // Handle various possible value types
     if (num === undefined || num === null) return '0';
     
@@ -94,13 +124,13 @@ export default function BuilderResultsTable({ results, query, darkMode }) {
   };
   
   // Copy account username to clipboard
-  const copyToClipboard = (text, e) => {
+  const copyToClipboard = (text: string, e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent row expansion when clicking copy button
     navigator.clipboard.writeText(text);
   };
   
   // Helper to render expandable row
-  const renderExpandableRow = (result, index) => {
+  const renderExpandableRow = (result: SearchResult, index: number) => {
     const isExpanded = expandedRows[result.username] || false;
     
     // Ensure builder credentials are numbers
@@ -141,7 +171,8 @@ export default function BuilderResultsTable({ results, query, darkMode }) {
                     unoptimized={true}
                     onError={(e) => {
                       // Replace broken image with fallback
-                      e.currentTarget.src = `https://avatar.vercel.sh/${result.username}`;
+                      const target = e.currentTarget as HTMLImageElement;
+                      target.src = `https://avatar.vercel.sh/${result.username}`;
                     }}
                   />
                 </div>
@@ -301,7 +332,10 @@ export default function BuilderResultsTable({ results, query, darkMode }) {
                 >
                   VIEW PROFILE
                 </a>
-                <button className="text-xs font-mono bg-[#0057ff] text-white px-3 py-2 rounded">
+                <button 
+                  onClick={(e) => e.stopPropagation()} 
+                  className="text-xs font-mono bg-[#0057ff] text-white px-3 py-2 rounded"
+                >
                   CONNECT
                 </button>
               </div>
