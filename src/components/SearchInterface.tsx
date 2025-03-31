@@ -1,19 +1,22 @@
-/* eslint-disable */
-
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import BuilderResultsTable from './BuilderResultsTable';
+import AgentResults from './AgentResults';
+import { processWithAgent } from '@/lib/agentHandler';
 
 export default function SearchInterface() {
   const [query, setQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
+  const [isAgentProcessing, setIsAgentProcessing] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [results, setResults] = useState([]);
+  const [agentResponse, setAgentResponse] = useState(null);
   const [darkMode, setDarkMode] = useState(false);
   const [typewriterText, setTypewriterText] = useState('');
   const [typewriterIndex, setTypewriterIndex] = useState(0);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [logs, setLogs] = useState([]);
+  const inputRef = useRef(null);
+  const logsEndRef = useRef(null);
 
   // Set light mode by default for Palantir grey vibe
   useEffect(() => {
@@ -27,6 +30,13 @@ export default function SearchInterface() {
     }
   }, []);
 
+  // Scroll logs to bottom when new logs are added
+  useEffect(() => {
+    if (logsEndRef.current) {
+      logsEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [logs]);
+
   // Typewriter effect when searching
   useEffect(() => {
     if (isSearching && typewriterIndex < query.length) {
@@ -39,32 +49,81 @@ export default function SearchInterface() {
     }
   }, [isSearching, typewriterIndex, query]);
 
-  const handleSearch = async (e: React.FormEvent) => {
+  // Add a log entry
+  const addLog = (message, type = 'info') => {
+    setLogs(prev => [...prev, { message, type, timestamp: new Date() }]);
+  };
+
+  const handleSearch = async (e) => {
     e.preventDefault();
     if (!query.trim() || isSearching) return;
     
+    // Reset state
     setIsSearching(true);
     setIsCompleted(false);
     setTypewriterText('');
     setTypewriterIndex(0);
+    setAgentResponse(null);
+    setLogs([]);
+    
+    addLog(`🔍 Starting search for query: "${query.trim()}"`, 'info');
     
     try {
+      addLog('📡 Calling search API...', 'info');
       const response = await fetch('/api/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: query.trim() })
       });
       
-      if (!response.ok) throw new Error(`Error: ${response.status}`);
+      if (!response.ok) {
+        addLog(`❌ Search API error: ${response.status}`, 'error');
+        throw new Error(`Error: ${response.status}`);
+      }
       
       const data = await response.json();
-      console.log('Search API response:', data);
+      
+      // Log detailed structure for first result if available
+      if (data.results && data.results.length > 0) {
+        const firstResult = data.results[0];
+        const castCount = firstResult.relevantCasts?.length || 0;
+        
+        addLog(`✅ Search complete - found ${data.results.length} results`, 'success');
+        addLog(`📊 First result: ${firstResult.username} with ${castCount} relevant casts`, 'info');
+        
+        if (castCount > 0) {
+          // Log sample cast content
+          addLog(`📝 Sample cast: "${firstResult.relevantCasts[0].text.substring(0, 50)}${firstResult.relevantCasts[0].text.length > 50 ? '...' : ''}"`, 'info');
+        }
+      } else {
+        addLog(`✅ Search complete - found ${data.results?.length || 0} results`, 'success');
+      }
       
       setResults(data.results || []);
       setIsSearching(false);
       setIsCompleted(true);
       
+      // Process with agent if we have results
+      if (data.results && data.results.length > 0) {
+        setIsAgentProcessing(true);
+        addLog(`🧠 Starting agent analysis of ${data.results.length} results...`, 'info');
+        
+        try {
+          const agentData = await processWithAgent(query, data.results);
+          addLog(`✅ Agent analysis complete - found ${agentData.processedResults?.length || 0} relevant results`, 'success');
+          setAgentResponse(agentData);
+        } catch (error) {
+          addLog(`❌ Agent processing error: ${error.message}`, 'error');
+          console.error('Agent processing error:', error);
+        } finally {
+          setIsAgentProcessing(false);
+        }
+      } else {
+        addLog('⚠️ No results to analyze', 'warning');
+      }
+      
     } catch (error) {
+      addLog(`❌ Search error: ${error.message}`, 'error');
       console.error('Search error:', error);
       setIsSearching(false);
     }
@@ -104,7 +163,7 @@ export default function SearchInterface() {
       </header>
       
       {/* Main search area */}
-      <main className="pt-16 px-6 md:px-14 w-full max-w-5xl mx-auto">
+      <main className="pt-8 px-6 md:px-14 w-full max-w-5xl mx-auto">
         <div className="mb-6 text-center">
           <h1 className="text-3xl md:text-4xl font-bold mb-2">Quotient</h1>
         </div>
@@ -116,7 +175,7 @@ export default function SearchInterface() {
               <circle cx="11" cy="11" r="8"></circle>
               <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
             </svg>
-            <div className={`text-xs uppercase tracking-wider ${textMutedColor} font-semibold font-mono`}></div>
+            <div className={`text-xs uppercase tracking-wider ${textMutedColor} font-semibold font-mono`}>Query</div>
           </div>
           
           <form onSubmit={handleSearch} className="mb-3">
@@ -126,13 +185,13 @@ export default function SearchInterface() {
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="e.g. Who is building info-finance projects on Base? Who is building tools for Farcaster Frames / Mini-apps Developers?..."
-                disabled={isSearching}
+                placeholder="e.g. Find Frame developers building on Base..."
+                disabled={isSearching || isAgentProcessing}
                 className={`w-full ${inputBgWithOpacity} border ${borderColor} rounded p-4 ${textColor} focus:outline-none focus:border-[#0057ff] ${placeholderColor} font-mono text-sm`}
               />
               <button
                 type="submit"
-                disabled={isSearching || !query.trim()}
+                disabled={isSearching || isAgentProcessing || !query.trim()}
                 className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-[#0057ff] text-white px-4 py-2 rounded text-xs uppercase tracking-wider font-mono hover:bg-[#0046cc] transition-colors disabled:opacity-50 disabled:hover:bg-[#0057ff]"
               >
                 Execute
@@ -155,10 +214,15 @@ export default function SearchInterface() {
                 <span className="w-2 h-2 bg-[#0057ff] rounded-full mr-2"></span>
                 <span>Scanning builder constellation...</span>
               </>
+            ) : isAgentProcessing ? (
+              <>
+                <span className="w-2 h-2 bg-[#9c27b0] rounded-full mr-2"></span>
+                <span>Analyzing results with agent...</span>
+              </>
             ) : isCompleted ? (
               <>
                 <span className="w-2 h-2 bg-[#27c93f] rounded-full mr-2"></span>
-                <span>Query completed. {results.length} matching builders found.</span>
+                <span>Query completed. {agentResponse?.processedResults?.length || 0} relevant builders found.</span>
               </>
             ) : (
               <>
@@ -169,12 +233,38 @@ export default function SearchInterface() {
           </div>
         </div>
         
-        {/* Results Section */}
-        {isCompleted && results.length > 0 && (
-          <BuilderResultsTable 
-            results={results} 
-            query={query} 
-            darkMode={darkMode} 
+        {/* Logs section */}
+        {logs.length > 0 && (
+          <div className={`w-full mb-6 ${bgColorWithOpacity} rounded-lg border ${borderColor} p-4 backdrop-blur-sm`}>
+            <div className="flex items-center mb-2">
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className="text-xs uppercase tracking-wider font-mono">System Logs</span>
+            </div>
+            <div className="bg-gray-900 text-gray-100 font-mono text-xs p-3 rounded h-48 overflow-y-auto">
+              {logs.map((log, index) => {
+                const color = 
+                  log.type === 'error' ? 'text-red-400' :
+                  log.type === 'success' ? 'text-green-400' :
+                  log.type === 'warning' ? 'text-yellow-400' : 'text-blue-300';
+                
+                return (
+                  <div key={index} className={`${color} mb-1`}>
+                    <span className="opacity-70">[{log.timestamp.toLocaleTimeString()}]</span> {log.message}
+                  </div>
+                );
+              })}
+              <div ref={logsEndRef} />
+            </div>
+          </div>
+        )}
+        
+        {/* Agent Results */}
+        {isCompleted && !isAgentProcessing && agentResponse && (
+          <AgentResults 
+            agentResponse={agentResponse}
+            darkMode={darkMode}
           />
         )}
       </main>

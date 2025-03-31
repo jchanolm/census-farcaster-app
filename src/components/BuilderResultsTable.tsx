@@ -1,38 +1,8 @@
 import { useState } from 'react';
 import Image from 'next/image';
 
-// Define types within the component for simplicity
-interface LinkedAccount {
-  username: string;
-  platform: string;
-}
-
-interface BuilderCredentials {
-  farcasterRewards: number;
-  smartContracts: number;
-  framesDeployed: number;
-  channelsModerated: string[];
-}
-
-interface SearchResult {
-  username: string;
-  bio: string;
-  location?: string;
-  credentialCount: number
-  pfpUrl?: string;
-  accounts: LinkedAccount[];
-  builderCreds: BuilderCredentials;
-  score: number;
-}
-
-interface BuilderResultsTableProps {
-  results: SearchResult[];
-  query: string;
-  darkMode: boolean;
-}
-
-export default function BuilderResultsTable({ results, query, darkMode }: BuilderResultsTableProps) {
-  const [expandedRows, setExpandedRows] = useState<{[key: string]: boolean}>({});
+export default function BuilderResultsTable({ results, query, darkMode }) {
+  const [expandedRows, setExpandedRows] = useState({});
   
   // Styling based on theme
   const bgColorWithOpacity = darkMode ? 'bg-black bg-opacity-80' : 'bg-[#f2f2f5] bg-opacity-90';
@@ -42,9 +12,10 @@ export default function BuilderResultsTable({ results, query, darkMode }: Builde
   const hoverBgColor = darkMode ? 'hover:bg-[#0a0a15]' : 'hover:bg-[#f8f8fa]';
   const badgeBgColor = darkMode ? 'bg-[#111122]' : 'bg-[#e9e9ed]';
   const expandedBgColor = darkMode ? 'bg-[#0a0a10]' : 'bg-[#eaeaef]';
+  const relevanceBgColor = darkMode ? 'bg-[#0a0a20]' : 'bg-[#f8f8ff]';
   
   // Toggle expanded row
-  const toggleRowExpand = (username: string) => {
+  const toggleRowExpand = (username) => {
     setExpandedRows({
       ...expandedRows,
       [username]: !expandedRows[username]
@@ -52,7 +23,7 @@ export default function BuilderResultsTable({ results, query, darkMode }: Builde
   };
   
   // Score visualization using carets based on relative score range
-  const renderScoreGauge = (score: number) => {
+  const renderScoreGauge = (score) => {
     // Find min and max scores from all results
     const minScore = Math.min(...results.map(r => r.score));
     const maxScore = Math.max(...results.map(r => r.score));
@@ -109,7 +80,7 @@ export default function BuilderResultsTable({ results, query, darkMode }: Builde
   };
   
   // Format large numbers with commas and handle undefined/null/NaN values
-  const formatNumber = (num: number | string | undefined | null) => {
+  const formatNumber = (num) => {
     // Handle various possible value types
     if (num === undefined || num === null) return '0';
     
@@ -123,27 +94,27 @@ export default function BuilderResultsTable({ results, query, darkMode }: Builde
   };
   
   // Copy account username to clipboard
-  const copyToClipboard = (text: string, e: React.MouseEvent) => {
+  const copyToClipboard = (text, e) => {
     e.stopPropagation(); // Prevent row expansion when clicking copy button
     navigator.clipboard.writeText(text);
   };
   
   // Helper to render expandable row
-  const renderExpandableRow = (result: SearchResult, index: number) => {
+  const renderExpandableRow = (result, index) => {
     const isExpanded = expandedRows[result.username] || false;
     
     // Ensure builder credentials are numbers
     const builderCreds = {
-      smartContracts: typeof result.builderCreds.smartContracts === 'number' 
+      smartContracts: typeof result.builderCreds?.smartContracts === 'number' 
         ? result.builderCreds.smartContracts 
-        : Number(result.builderCreds.smartContracts) || 0,
-      framesDeployed: typeof result.builderCreds.framesDeployed === 'number' 
+        : Number(result.builderCreds?.smartContracts) || 0,
+      framesDeployed: typeof result.builderCreds?.framesDeployed === 'number' 
         ? result.builderCreds.framesDeployed 
-        : Number(result.builderCreds.framesDeployed) || 0,
-      farcasterRewards: typeof result.builderCreds.farcasterRewards === 'number' 
+        : Number(result.builderCreds?.framesDeployed) || 0,
+      farcasterRewards: typeof result.builderCreds?.farcasterRewards === 'number' 
         ? result.builderCreds.farcasterRewards 
-        : Number(result.builderCreds.farcasterRewards) || 0,
-      channelsModerated: Array.isArray(result.builderCreds.channelsModerated) 
+        : Number(result.builderCreds?.farcasterRewards) || 0,
+      channelsModerated: Array.isArray(result.builderCreds?.channelsModerated) 
         ? result.builderCreds.channelsModerated 
         : []
     };
@@ -167,6 +138,11 @@ export default function BuilderResultsTable({ results, query, darkMode }: Builde
                     width={32} 
                     height={32} 
                     className="object-cover"
+                    unoptimized={true}
+                    onError={(e) => {
+                      // Replace broken image with fallback
+                      e.currentTarget.src = `https://avatar.vercel.sh/${result.username}`;
+                    }}
                   />
                 </div>
               ) : (
@@ -219,6 +195,16 @@ export default function BuilderResultsTable({ results, query, darkMode }: Builde
         {isExpanded && (
           <tr key={`detail-${index}`} className={`${expandedBgColor} border-b ${borderColor}`}>
             <td colSpan={4} className="px-6 py-4">
+              {/* Relevance context section - only shown if available */}
+              {result.relevanceContext && (
+                <div className={`mb-4 p-3 rounded ${relevanceBgColor} border border-blue-200 border-opacity-20`}>
+                  <h4 className={`text-xs uppercase tracking-wider text-blue-500 font-mono mb-1`}>
+                    Why This Result Is Relevant
+                  </h4>
+                  <p className="text-sm">{result.relevanceContext}</p>
+                </div>
+              )}
+            
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Left column */}
                 <div>
