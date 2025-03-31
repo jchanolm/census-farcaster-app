@@ -116,7 +116,7 @@ export default function SearchInterface() {
               <circle cx="11" cy="11" r="8"></circle>
               <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
             </svg>
-            <div className={`text-xs uppercase tracking-wider ${textMutedColor} font-semibold font-mono`}>Query</div>
+            <div className={`text-xs uppercase tracking-wider ${textMutedColor} font-semibold font-mono`}></div>
           </div>
           
           <form onSubmit={handleSearch} className="mb-3">
@@ -126,7 +126,7 @@ export default function SearchInterface() {
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="e.g. Find Frame developers building on Base..."
+                placeholder="e.g. Who is building info-finance projects on Base? Who is building tools for Farcaster Frames / Mini-apps Developers?..."
                 disabled={isSearching}
                 className={`w-full ${inputBgWithOpacity} border ${borderColor} rounded p-4 ${textColor} focus:outline-none focus:border-[#0057ff] ${placeholderColor} font-mono text-sm`}
               />
