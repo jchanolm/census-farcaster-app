@@ -4,15 +4,13 @@ export const dynamic = 'force-dynamic';
 
 // Format the data for the Deepseek prompt
 function formatPrompt(query: string, results: any[]) {
-  console.log(results)
   return `
 # TASK
 You are a builder intelligence assistant analyzing search results for web3 and Farcaster profiles.
 The user has searched for: "${query}"
 
 # INSTRUCTIONS
-Identify users referenced in provided text that are relevant to the query and why:
-   - An explanation of the user's relevance to the search query, with direct citations from the provided search results whenever possible.
+Identify users referenced in provided search results before and explain how they are relevant to the user's query.
 Tone / Style of an intelligence analyst.
 - Direct, active voice
 - Clear, concise neutral
@@ -24,12 +22,11 @@ ${JSON.stringify(results, null, 2)}
 # RESPONSE FORMAT
 Return your response as a JSON object with the following structure:
 {
-  "summary": "Your detailed summary of the overall results",
-  "keyTakeaways": ["Insight 1", "Insight 2", "Insight 3", "Insight 4"],
+  "summary": "Executive summary of the search results, calling out any notable results, trends, or insights.",
   "processedResults": [
     {
       "username": "user123",
-      "relevanceContext": "Detailed explanation of why this result is relevant, directly citing provided search results.,
+      "relevanceContext": "Detailed explanation of why this result is relevant, directly quoting text in the provided search results.,
       "isRelevant": true/false
     }
   ]

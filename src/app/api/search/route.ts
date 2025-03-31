@@ -16,12 +16,12 @@ export async function POST(request: Request) {
     // Basic query that just returns nodes that match the query
     const basicQuery = `
       // Match from fulltext index
-    CALL db.index.fulltext.queryNodes('text', $query) YIELD node , score 
+    CALL db.index.fulltext.queryNodes('casts', $query) YIELD node , score 
     MATCH (node)
     ORDER BY score DESC 
-    LIMIT 50
+    LIMIT 150
     MATCH (user:RealAssNigga:Account)-[r:POSTED]-(node)
-    WITH user, sum(score) as totalScore, collect(distinct(node.text)) as castText
+    WITH user, avg(score) as totalScore, collect(distinct(node.text)) as castText
     return distinct user.username as username, user.bio as bio, user.fcRewardsEarned as fcRewardsEarned,
     user.fcCredScore as fcCredScore, user.twitter as twitter, user.github as github, user.dune as dune,
     castText, totalScore order by totalScore desc\    `;
