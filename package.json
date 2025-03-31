@@ -11,6 +11,8 @@
   "dependencies": {
     "@farcaster/frame-sdk": "^0.0.31",
     "@privy-io/react-auth": "^2.7.2",
+    "highlight.js": "^11.11.1",
+    "marked": "^15.0.7",
     "neo4j-driver": "^5.28.1",
     "next": "14.2.26",
     "react": "^18",

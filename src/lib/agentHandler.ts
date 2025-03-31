@@ -14,7 +14,7 @@ interface ProcessedResult {
   /**
    * Process search results through the agent
    */
-  export async function processWithAgent(query: string, results: any[]): Promise<AgentResponse> {
+  export async function processWithAgent(query: string, results: any[]): Promise<any> {
     try {
       console.log('🔍 Agent Handler: Starting agent processing...');
       console.log(`📊 Agent Handler: Processing ${results.length} results for query: "${query}"`);
@@ -26,6 +26,7 @@ interface ProcessedResult {
       };
       
       console.log('🚀 Agent Handler: Sending request to agent API...');
+      
       // Call the agent API endpoint
       const response = await fetch('/api/agent/process', {
         method: 'POST',
@@ -41,19 +42,23 @@ interface ProcessedResult {
       }
       
       console.log('✅ Agent Handler: Received response from agent API');
-      // The API handles filtering of irrelevant results
-      const agentResponse = await response.json();
-      console.log(`📈 Agent Handler: Received ${agentResponse.processedResults?.length || 0} processed results`);
       
-      return agentResponse;
+      // Return the raw text from the response
+      const reportText = await response.text();
+      return {
+        reportText,
+        summary: "Analysis complete",
+        processedResults: []
+      };
+      
     } catch (error) {
       console.error('❌ Agent Handler: Error during processing:', error);
       
-      // Fallback: return empty results with error message
+      // Fallback: return error message
       return {
-        summary: `Found ${results.length} builders matching your query, but error in processing.`,
-        keyTakeaways: ['Error in agent processing, cannot show results.'],
-        processedResults: [] // Return empty array on error
+        reportText: `Error during analysis: ${error instanceof Error ? error.message : String(error)}`,
+        summary: `Error analyzing ${results.length} results.`,
+        processedResults: []
       };
     }
   }

@@ -1,8 +1,6 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import AgentResults from './AgentResults';
-import { processWithAgent } from '@/lib/agentHandler';
 
 type LogEntry = {
   message: string;
@@ -16,16 +14,88 @@ type SearchResult = {
   text?: string;
   castText?: string[];
   totalScore?: number;
-  // Allow any other properties from Neo4j
   [key: string]: any;
 };
+
+function AgentReport({ report, darkMode, isLoading }) {
+  if (isLoading) {
+    return (
+      <div className={`${darkMode ? 'bg-black bg-opacity-80' : 'bg-[#f2f2f5] bg-opacity-90'} rounded-lg border ${darkMode ? 'border-gray-700' : 'border-gray-300'} p-5 backdrop-blur-sm mb-6 w-full`}>
+        <div className="flex items-center mb-3">
+          <div className="w-4 h-4 mr-2 rounded-full bg-[#0057ff] opacity-80 animate-pulse"></div>
+          <div className={`text-xs uppercase tracking-wider ${darkMode ? 'text-[#aaa]' : 'text-[#777]'} font-semibold font-mono`}>
+            ANALYSIS
+          </div>
+        </div>
+        
+        <div className="my-6 flex flex-col items-center py-4">
+          <div className="flex space-x-2 justify-center mb-3">
+            <div className="w-2 h-2 rounded-full bg-[#0057ff] opacity-60 animate-pulse"></div>
+            <div className="w-2 h-2 rounded-full bg-[#0057ff] opacity-60 animate-pulse delay-100"></div>
+            <div className="w-2 h-2 rounded-full bg-[#0057ff] opacity-60 animate-pulse delay-200"></div>
+          </div>
+          <p className={`text-sm ${darkMode ? 'text-[#aaa]' : 'text-[#777]'}`}>
+            Generating report...
+          </p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (!report) return null;
+  
+  // Format the text with basic HTML formatting
+  const formatText = (text) => {
+    // Process the text in steps
+    let formatted = text;
+    
+    // Format headers (either # style or ALL CAPS style)
+    formatted = formatted.replace(/^(#+)\s+(.+)$/gm, '<h3 class="text-[#0057ff] font-mono text-sm uppercase tracking-wider font-medium my-3">$2</h3>');
+    formatted = formatted.replace(/^([A-Z][A-Z\s]+[A-Z])$/gm, '<h3 class="text-[#0057ff] font-mono text-sm uppercase tracking-wider font-medium my-3">$1</h3>');
+    
+    // Format numbered items (like "1. Item")
+    formatted = formatted.replace(/^(\d+\.\s+)(.+)$/gm, '<div class="flex items-start mb-2"><span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#0057ff] bg-opacity-10 text-[#0057ff] text-xs font-medium mr-3 flex-shrink-0">$1</span><span>$2</span></div>');
+    
+    // Format bold text
+    formatted = formatted.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    
+    // Format username mentions
+    formatted = formatted.replace(/@([a-zA-Z0-9_]+)/g, '<a href="https://warpcast.com/$1" target="_blank" class="text-[#0057ff] font-mono">@$1</a>');
+    
+    // Handle paragraphs (preserve empty lines)
+    formatted = formatted.replace(/\n\n/g, '</p><p class="mb-3">');
+    
+    // Wrap the entire text in a paragraph tag
+    formatted = '<p class="mb-3">' + formatted + '</p>';
+    
+    return { __html: formatted };
+  };
+  
+  return (
+    <div className={`${darkMode ? 'bg-black bg-opacity-80' : 'bg-[#f2f2f5] bg-opacity-90'} rounded-lg border ${darkMode ? 'border-gray-700' : 'border-gray-300'} p-5 backdrop-blur-sm mb-6 w-full`}>
+      <div className="flex items-center mb-5">
+        <svg className="w-4 h-4 mr-2 text-[#0057ff]" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+          <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd"></path>
+        </svg>
+        <div className={`text-xs uppercase tracking-wider ${darkMode ? 'text-[#aaa]' : 'text-[#777]'} font-semibold font-mono`}>
+          INTELLIGENCE REPORT
+        </div>
+      </div>
+      
+      <div 
+        className={`text-sm ${darkMode ? 'text-white' : 'text-[#333]'} font-sans leading-relaxed`}
+        dangerouslySetInnerHTML={formatText(report)}
+      />
+    </div>
+  );
+}
 
 export default function SearchInterface() {
   const [query, setQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [isAgentProcessing, setIsAgentProcessing] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
-  const [agentResponse, setAgentResponse] = useState<any>(null);
+  const [agentReport, setAgentReport] = useState<string>('');
   const [darkMode, setDarkMode] = useState(false);
   const [typewriterText, setTypewriterText] = useState('');
   const [typewriterIndex, setTypewriterIndex] = useState(0);
@@ -79,7 +149,7 @@ export default function SearchInterface() {
     setIsCompleted(false);
     setTypewriterText('');
     setTypewriterIndex(0);
-    setAgentResponse(null);
+    setAgentReport('');
     setLogs([]);
     
     addLog(`🔍 Starting search for query: "${query.trim()}"`, 'info');
@@ -120,9 +190,62 @@ export default function SearchInterface() {
         addLog(`🧠 Starting agent analysis of ${data.results.length} results...`, 'info');
         
         try {
-          const agentData = await processWithAgent(query, data.results);
-          addLog(`✅ Agent analysis complete - found ${agentData.processedResults?.length || 0} relevant results`, 'success');
-          setAgentResponse(agentData);
+          // Call the agent API directly to get the streaming response
+          const agentResponse = await fetch('/api/agent/process', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ query, results: data.results }),
+          });
+          
+          if (!agentResponse.ok) {
+            throw new Error(`Agent API error: ${agentResponse.status}`);
+          }
+          
+          // Process the streaming response
+          const reader = agentResponse.body?.getReader();
+          const decoder = new TextDecoder();
+          
+          if (reader) {
+            let reportContent = '';
+            
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              
+              // Decode and add to the report content
+              const chunk = decoder.decode(value, { stream: true });
+              
+              // Parse SSE format
+              const lines = chunk.split('\n');
+              for (const line of lines) {
+                if (line.startsWith('data:')) {
+                  try {
+                    const content = line.substring(5).trim();
+                    if (content === '[DONE]') continue;
+                    
+                    const jsonData = JSON.parse(content);
+                    if (jsonData.choices && jsonData.choices[0].delta && jsonData.choices[0].delta.content) {
+                      const textChunk = jsonData.choices[0].delta.content;
+                      reportContent += textChunk;
+                      setAgentReport(reportContent);
+                    }
+                  } catch (e) {
+                    // Fallback for non-JSON data
+                    const textContent = line.substring(5).trim();
+                    if (textContent && textContent !== '[DONE]') {
+                      reportContent += textContent;
+                      setAgentReport(reportContent);
+                    }
+                  }
+                }
+              }
+            }
+            
+            addLog(`✅ Agent analysis complete - generated report`, 'success');
+          }
+          
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
           addLog(`❌ Agent processing error: ${errorMessage}`, 'error');
@@ -236,7 +359,7 @@ export default function SearchInterface() {
             ) : isCompleted ? (
               <>
                 <span className="w-2 h-2 bg-[#27c93f] rounded-full mr-2"></span>
-                <span>Query completed. {agentResponse?.processedResults?.length || 0} relevant builders found.</span>
+                <span>Query completed.</span>
               </>
             ) : (
               <>
@@ -268,10 +391,11 @@ export default function SearchInterface() {
         )}
         
         {/* Agent Results */}
-        {isCompleted && !isAgentProcessing && agentResponse && (
-          <AgentResults 
-            agentResponse={agentResponse}
+        {(isAgentProcessing || agentReport) && (
+          <AgentReport 
+            report={agentReport}
             darkMode={darkMode}
+            isLoading={isAgentProcessing && !agentReport}
           />
         )}
       </main>
