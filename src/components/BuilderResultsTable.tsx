@@ -14,17 +14,6 @@ interface BuilderCredentials {
   channelsModerated: string[];
 }
 
-interface Cast {
-  hash: string;
-  text: string;
-  timestamp: string;
-  likeCount: number;
-  recastCount: number;
-  replyCount: number;
-  parentUrl?: string;
-  authorFid?: string;
-}
-
 interface SearchResult {
   username: string;
   bio: string;
