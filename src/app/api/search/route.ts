@@ -15,47 +15,21 @@ export async function POST(request: Request) {
     
     // Basic query that just returns nodes that match the query
     const basicQuery = `
-CALL db.index.fulltext.queryNodes('casts', "people building prediction marke tstuff") YIELD node, score
-ORDER BY score DESC 
-LIMIT 50 
-WITH node as cast, score as castScore 
-MATCH (cast)-[rel]-(account:Account)
-WITH cast, account, castScore, collect(distinct {username: account.username, relationshipToCast: type(rel)}) as linkedAccounts
-WITH account, collect({
-  text: cast.text, 
-  interactionsCount: cast.recastCount + cast.likeCount, 
-  mentionedChannels: cast.mentionedChannelNames, 
-  mentionedFids: cast.mentionedFids,  
-  timestamp: cast.timestamp, 
-  linkedAccounts: linkedAccounts,
-  score: castScore
-}) as userCasts, sum(castScore) as sumScore, max(castScore) as maxCastScore, avg(castScore) as avgCastScore
-// Collect all users with their scores
-WITH collect({
-  username: account.username, 
-  bio: account.bio, 
-  fcCredScore: account.fcCredScore, 
-  rewards: account.rewards, 
-  twitter: account.twitter, 
-  github: account.github,  
-  pfpUrl: account.pfpUrl,
-  relevanceScore: sumScore + avgCastScore
-}) as results,
-     collect(userCasts) as allCastCollections
-// Flatten all cast collections into a single list of casts
-UNWIND allCastCollections as castCollection
-UNWIND castCollection as singleCast
-WITH results, collect(DISTINCT singleCast) as allCasts
-// Return the structured response
-CALL db.index.fulltext.queryNodes('wcAccounts', "people building prediction marke tstuff") YIELD node, score
-order by score desc limit 20 
-with results, allCasts, collect({username: node.username, bio: node.bio, score: score}) as bioSearch
-
-RETURN {
-  results: results, 
-  casts: allCasts,
-  matchingBios: bioSearch
-} as castResultSearch    
+      // Match from fulltext index
+      CALL db.index.fulltext.queryNodes('text', $query) YIELD as accountOrCast, score
+      WHERE (node:Account:Warpcast OR node:Cast) AND score > 0.7
+      ORDER BY SCORE DESC LIMIT 150
+      WITH accountOrCast, score
+      CALL db.index.fulltext.queryNodes('wcAccounts', $query) YIELD as account, score
+      WHERE (account:RealAssNigga) and score > .8
+      ORDER BY SCORE DESC LIMIT 20
+      // Return basic node info
+      RETURN 
+        CASE WHEN node:Account THEN "account" ELSE "cast" END as nodeType,
+        CASE WHEN node:Account THEN node.username ELSE null END as username,
+        CASE WHEN node:Cast THEN node.text ELSE null END as text,
+        CASE WHEN node:Account THEN node.bio ELSE null END as bio,
+        score
     `;
     
     const records = await runQuery(basicQuery, { query: query });
@@ -71,6 +45,7 @@ RETURN {
       score: record.get('score')
     }));
     
+    // Count accounts and casts
     const accounts = results.filter(r => r.nodeType === "account").length;
     const casts = results.filter(r => r.nodeType === "cast").length;
     
