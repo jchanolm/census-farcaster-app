@@ -1,25 +1,4 @@
-interface Account {
-    username: string;
-    platform?: string;
-  }
-  
-  interface BuilderCreds {
-    smartContracts?: number;
-    framesDeployed?: number;
-    farcasterRewards?: number;
-    channelsModerated?: string[];
-  }
-  
-  interface SearchResult {
-    username: string;
-    bio?: string;
-    location?: string;
-    accounts?: Account[];
-    builderCreds?: BuilderCreds;
-    [key: string]: unknown;
-  }
-  
-  interface ProcessedResult {
+interface ProcessedResult {
     username: string;
     relevanceContext: string;
     isRelevant: boolean;
@@ -35,21 +14,15 @@ interface Account {
   /**
    * Process search results through the agent
    */
-  export async function processWithAgent(query: string, results: SearchResult[]): Promise<AgentResponse> {
+  export async function processWithAgent(query: string, results: any[]): Promise<AgentResponse> {
     try {
       console.log('🔍 Agent Handler: Starting agent processing...');
       console.log(`📊 Agent Handler: Processing ${results.length} results for query: "${query}"`);
       
-      // Prepare data for the model
+      // Pass raw results directly to the agent API without transformation
       const modelInput = {
         query,
-        results: results.map(r => ({
-          username: r.username,
-          bio: r.bio,
-          location: r.location || 'Unknown',
-          accounts: r.accounts,
-          builderCreds: r.builderCreds
-        }))
+        results
       };
       
       console.log('🚀 Agent Handler: Sending request to agent API...');

@@ -17,8 +17,9 @@ export async function POST(request: Request) {
     const basicQuery = `
       // Match from fulltext index
     CALL db.index.fulltext.queryNodes('text', $query) YIELD node , score 
+    MATCH (node)
     ORDER BY score DESC 
-    LIMIT 100
+    LIMIT 50
     MATCH (user:RealAssNigga:Account)-[r:POSTED]-(node)
     WITH user, sum(score) as totalScore, collect(distinct(node.text)) as castText
     return distinct user.username as username, user.bio as bio, user.fcRewardsEarned as fcRewardsEarned,
@@ -29,26 +30,19 @@ export async function POST(request: Request) {
     
     console.log(`Query returned ${records.length} records`);
     
-    // Just pass the raw data
-    const results = records.map(record => ({
-      nodeType: record.get('nodeType'),
-      username: record.get('username'),
-      text: record.get('text'),
-      bio: record.get('bio'),
-      score: record.get('score')
-    }));
-    
-    // Count accounts and casts
-    const accounts = results.filter(r => r.nodeType === "account").length;
-    const casts = results.filter(r => r.nodeType === "cast").length;
-    
-    console.log(`Found ${accounts} accounts and ${casts} casts`);
-    
+    // Convert Neo4j records to plain objects that can be serialized
+    const results = records.map(record => {
+      // Convert the Neo4j Record to a plain object with all properties
+      const plainObj = {};
+      record.keys.forEach(key => {
+        plainObj[key] = record.get(key);
+      });
+      return plainObj;
+    });
+  
     return NextResponse.json({ 
       query, 
-      results,
-      accounts,
-      casts
+      results
     });
     
   } catch (error) {

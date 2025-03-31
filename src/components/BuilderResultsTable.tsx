@@ -7,22 +7,22 @@ interface Account {
 }
 
 interface BuilderCreds {
-  smartContracts?: number;
-  framesDeployed?: number;
-  farcasterRewards?: number;
-  channelsModerated?: string[];
+  fcRewardsEarned?: number;
+  fcCredScore?: number;
 }
 
 interface SearchResult {
   username: string;
   bio?: string;
-  location?: string;
+  twitter?: string;
+  github?: string;
+  dune?: string;
   pfpUrl?: string;
-  score: number;
-  credentialCount?: number;
-  accounts?: Account[];
-  builderCreds?: BuilderCreds;
-  relevanceContext?: string;
+  score?: number;
+  castText?: string[];
+  totalScore?: number;
+  fcRewardsEarned?: number;
+  fcCredScore?: number;
 }
 
 interface BuilderResultsTableProps {
@@ -42,7 +42,6 @@ export default function BuilderResultsTable({ results, query, darkMode }: Builde
   const hoverBgColor = darkMode ? 'hover:bg-[#0a0a15]' : 'hover:bg-[#f8f8fa]';
   const badgeBgColor = darkMode ? 'bg-[#111122]' : 'bg-[#e9e9ed]';
   const expandedBgColor = darkMode ? 'bg-[#0a0a10]' : 'bg-[#eaeaef]';
-  const relevanceBgColor = darkMode ? 'bg-[#0a0a20]' : 'bg-[#f8f8ff]';
   
   // Toggle expanded row
   const toggleRowExpand = (username: string) => {
@@ -55,8 +54,9 @@ export default function BuilderResultsTable({ results, query, darkMode }: Builde
   // Score visualization using carets based on relative score range
   const renderScoreGauge = (score: number) => {
     // Find min and max scores from all results
-    const minScore = Math.min(...results.map(r => r.score));
-    const maxScore = Math.max(...results.map(r => r.score));
+    const allScores = results.map(r => r.totalScore || 0);
+    const minScore = Math.min(...allScores);
+    const maxScore = Math.max(...allScores);
     
     // Calculate the relative position in the range (0 to 1)
     // If min and max are the same, default to 1 (prevent division by zero)
@@ -65,7 +65,6 @@ export default function BuilderResultsTable({ results, query, darkMode }: Builde
       : (score - minScore) / (maxScore - minScore);
     
     // Determine number of carets based on relative position (1-5)
-    // More continuous scale with 5 possible values
     let caretCount;
     if (relativePosition >= 0.9) {
       caretCount = 5; // Top 10% of scores: 5 carets
@@ -133,21 +132,14 @@ export default function BuilderResultsTable({ results, query, darkMode }: Builde
   const renderExpandableRow = (result: SearchResult, index: number) => {
     const isExpanded = expandedRows[result.username] || false;
     
-    // Ensure builder credentials are numbers
-    const builderCreds = {
-      smartContracts: typeof result.builderCreds?.smartContracts === 'number' 
-        ? result.builderCreds.smartContracts 
-        : Number(result.builderCreds?.smartContracts) || 0,
-      framesDeployed: typeof result.builderCreds?.framesDeployed === 'number' 
-        ? result.builderCreds.framesDeployed 
-        : Number(result.builderCreds?.framesDeployed) || 0,
-      farcasterRewards: typeof result.builderCreds?.farcasterRewards === 'number' 
-        ? result.builderCreds.farcasterRewards 
-        : Number(result.builderCreds?.farcasterRewards) || 0,
-      channelsModerated: Array.isArray(result.builderCreds?.channelsModerated) 
-        ? result.builderCreds.channelsModerated 
-        : []
-    };
+    // Use totalScore from API response
+    const displayScore = result.totalScore || 0;
+    
+    // Create linked accounts array from twitter, github and dune fields
+    const linkedAccounts: Account[] = [];
+    if (result.twitter) linkedAccounts.push({ username: result.twitter, platform: 'Twitter' });
+    if (result.github) linkedAccounts.push({ username: result.github, platform: 'GitHub' });
+    if (result.dune) linkedAccounts.push({ username: result.dune, platform: 'Dune' });
     
     return (
       <>
@@ -185,17 +177,6 @@ export default function BuilderResultsTable({ results, query, darkMode }: Builde
                 <div className="font-mono text-[#0057ff] text-sm font-medium">
                   {result.username}
                 </div>
-                <div className="text-xs text-gray-500">
-                  {result.location && (
-                    <span className="inline-flex items-center">
-                      <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                      {result.location}
-                    </span>
-                  )}
-                </div>
               </div>
             </div>
           </td>
@@ -205,11 +186,11 @@ export default function BuilderResultsTable({ results, query, darkMode }: Builde
             <div className="line-clamp-2">{result.bio}</div>
           </td>
           
-          {/* Credentials Count */}
+          {/* Linked Accounts */}
           <td className="px-4 py-4">
             <div className="flex items-center">
               <span className={`text-sm font-medium ${textColor}`}>
-                {formatNumber(result.credentialCount)}
+                {linkedAccounts.length}
               </span>
             </div>
           </td>
@@ -217,7 +198,7 @@ export default function BuilderResultsTable({ results, query, darkMode }: Builde
           {/* Relevance Score */}
           <td className="px-4 py-4">
             <div className="flex flex-col">
-              {renderScoreGauge(result.score)}
+              {renderScoreGauge(displayScore)}
             </div>
           </td>
         </tr>
@@ -226,66 +207,33 @@ export default function BuilderResultsTable({ results, query, darkMode }: Builde
         {isExpanded && (
           <tr key={`detail-${index}`} className={`${expandedBgColor} border-b ${borderColor}`}>
             <td colSpan={4} className="px-6 py-4">
-              {/* Relevance context section - only shown if available */}
-              {result.relevanceContext && (
-                <div className={`mb-4 p-3 rounded ${relevanceBgColor} border border-blue-200 border-opacity-20`}>
-                  <h4 className={`text-xs uppercase tracking-wider text-blue-500 font-mono mb-1`}>
-                    Why This Result Is Relevant
-                  </h4>
-                  <p className="text-sm">{result.relevanceContext}</p>
-                </div>
-              )}
-            
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Left column */}
                 <div>
                   <div className="mb-4">
                     <h4 className={`text-xs uppercase tracking-wider ${textMutedColor} font-mono mb-2`}>
-                      Builder Credentials
+                      Farcaster Credentials
                     </h4>
                     <div className="grid grid-cols-2 gap-3">
                       <div className={`p-3 rounded ${badgeBgColor}`}>
-                        <div className="text-xs text-gray-500 font-mono mb-1">Smart Contracts</div>
-                        <div className="text-lg font-medium">{formatNumber(builderCreds.smartContracts)}</div>
+                        <div className="text-xs text-gray-500 font-mono mb-1">FC Rewards Earned</div>
+                        <div className="text-lg font-medium">{formatNumber(result.fcRewardsEarned)}</div>
                       </div>
                       <div className={`p-3 rounded ${badgeBgColor}`}>
-                        <div className="text-xs text-gray-500 font-mono mb-1">Frames Deployed</div>
-                        <div className="text-lg font-medium">{formatNumber(builderCreds.framesDeployed)}</div>
-                      </div>
-                      <div className={`p-3 rounded ${badgeBgColor}`}>
-                        <div className="text-xs text-gray-500 font-mono mb-1">FC Rewards</div>
-                        <div className="text-lg font-medium">{formatNumber(builderCreds.farcasterRewards)}</div>
+                        <div className="text-xs text-gray-500 font-mono mb-1">FC Cred Score</div>
+                        <div className="text-lg font-medium">{formatNumber(result.fcCredScore)}</div>
                       </div>
                     </div>
                   </div>
                   
-                  {/* Channels moderated */}
-                  {builderCreds.channelsModerated && builderCreds.channelsModerated.length > 0 && (
-                    <div className="mb-4">
-                      <h4 className={`text-xs uppercase tracking-wider ${textMutedColor} font-mono mb-2`}>
-                        Channels Moderated
-                      </h4>
-                      <div className="flex flex-wrap gap-2">
-                        {builderCreds.channelsModerated.map((channel, idx) => (
-                          <span 
-                            key={idx}
-                            className={`text-xs px-2 py-1 rounded ${badgeBgColor} font-mono`}
-                          >
-                            {channel}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
                   {/* Linked accounts */}
-                  {result.accounts && result.accounts.length > 0 && (
+                  {linkedAccounts.length > 0 && (
                     <div className="mb-4">
                       <h4 className={`text-xs uppercase tracking-wider ${textMutedColor} font-mono mb-2`}>
                         Linked Accounts
                       </h4>
                       <div className="grid grid-cols-1 gap-2">
-                        {result.accounts.map((account, idx) => (
+                        {linkedAccounts.map((account, idx) => (
                           <div 
                             key={idx}
                             className={`flex items-center justify-between p-2 rounded ${badgeBgColor}`}
@@ -315,15 +263,42 @@ export default function BuilderResultsTable({ results, query, darkMode }: Builde
                   )}
                 </div>
                 
-                {/* Right column - can be used for casts or other data */}
+                {/* Right column - Relevant Casts */}
                 <div>
-                  {/* Add content for right column here if needed */}
+                  {result.castText && result.castText.length > 0 && (
+                    <div>
+                      <h4 className={`text-xs uppercase tracking-wider ${textMutedColor} font-mono mb-2`}>
+                        Relevant Casts
+                      </h4>
+                      <div className="space-y-3">
+                        {result.castText.map((cast, idx) => (
+                          <div 
+                            key={idx} 
+                            className={`p-3 rounded ${badgeBgColor} text-sm relative`}
+                          >
+                            <div className="mb-1">{cast}</div>
+                            <div className="absolute top-2 right-2">
+                              <span className={`text-xs px-1.5 py-0.5 rounded-full bg-blue-500 bg-opacity-10 text-blue-500`}>
+                                cast
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {(!result.castText || result.castText.length === 0) && (
+                    <div className={`p-4 rounded ${badgeBgColor} text-sm text-gray-500 italic`}>
+                      No casts found for this user that match your query.
+                    </div>
+                  )}
                 </div>
               </div>
               
               {/* Actions row */}
               <div className="mt-4 pt-4 border-t border-gray-200 flex justify-end space-x-2">
-                <a
+                
                   href={`https://warpcast.com/${result.username}`}
                   target="_blank"
                   rel="noopener noreferrer"

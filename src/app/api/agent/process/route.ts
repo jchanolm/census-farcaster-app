@@ -4,37 +4,20 @@ export const dynamic = 'force-dynamic';
 
 // Format the data for the Deepseek prompt
 function formatPrompt(query: string, results: any[]) {
+  console.log(results)
   return `
 # TASK
 You are a builder intelligence assistant analyzing search results for web3 and Farcaster profiles.
 The user has searched for: "${query}"
 
 # INSTRUCTIONS
-1. Analyze the provided search results and determine their relevance to the query by considering:
-   - Their bio information
-   - Content from their casts (social posts)
-   - Their builder credentials (frames deployed, smart contracts, etc.)
-   - Their account connections
-   - Their channel moderation activity
-   - Any other relevant contextual information
-
-2. Write a detailed summary (3-5 sentences) analyzing the overall pattern in the results and what they reveal about potential candidates that match the query.
-
-3. List 3-5 key insights from the search results that would be valuable to the user.
-
-4. For each relevant result, provide:
-   - A substantial relevance explanation (40-80 words) that specifically mentions:
-     * Why this builder is relevant to the query
-     * What specific skills or experiences they have that match the query
-     * Reference specific casts or content they've posted if relevant
-     * Any notable achievements or metrics from their profile
-     * Mention specific accounts or connections if relevant
-   - A boolean indicating if the result is truly relevant (mark irrelevant results as false)
-
-5. Be thoughtful and insightful in your analysis, focusing on why these profiles would be valuable in the context of the query.
-
-Your analysis must be clear, direct, and in an intelligence analyst tone, but with sufficient detail to be genuinely useful. Don't be unnecessarily terse - provide meaningful context and insights.
-
+Identify users referenced in provided text that are relevant to the query and why:
+   - An explanation of the user's relevance to the search query, with direct citations from the provided search results whenever possible.
+Tone / Style of an intelligence analyst.
+- Direct, active voice
+- Clear, concise neutral
+- Avoid generalities, truisms, overstatement, stating the obvious
+- Strong nouns/verbs, every word should have a purpose
 # SEARCH RESULTS
 ${JSON.stringify(results, null, 2)}
 
@@ -46,7 +29,7 @@ Return your response as a JSON object with the following structure:
   "processedResults": [
     {
       "username": "user123",
-      "relevanceContext": "Detailed explanation of why this result is relevant, mentioning specific aspects of their profile, skills, and connections that align with the query...",
+      "relevanceContext": "Detailed explanation of why this result is relevant, directly citing provided search results.,
       "isRelevant": true/false
     }
   ]
@@ -95,7 +78,7 @@ export async function POST(request: Request) {
               content: prompt
             }
           ],
-          temperature: 0.3,
+          temperature: 0.1,
           response_format: { type: "json_object" }
         })
       });
