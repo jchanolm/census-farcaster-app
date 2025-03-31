@@ -1,9 +1,16 @@
 import { useState } from 'react';
 
+interface ProcessedResult {
+  username: string;
+  relevanceContext: string;
+  isRelevant: boolean;
+  [key: string]: any; // Allow other properties
+}
+
 interface AgentResponse {
   summary: string;
   keyTakeaways: string[];
-  processedResults: any[];
+  processedResults: ProcessedResult[];
 }
 
 interface AgentInsightsProps {

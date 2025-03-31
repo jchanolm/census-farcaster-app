@@ -9,7 +9,7 @@ export function initializeFrameSDK() {
   // We'll implement this in the main component after UI loads
   
   // Set up event listeners for frame events
-  sdk.on('frameAdded', ({ notificationDetails }) => {
+  sdk.on('frameAdded', ({ notificationDetails: _ }) => {
     console.log('App was added to Farcaster client');
     // You can store notification details if needed
   });

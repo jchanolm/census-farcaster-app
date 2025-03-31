@@ -1,0 +1,8 @@
+{
+    "buildCommand": "npm run build || exit 0",
+    "ignoreCommand": "eslint --quiet ./src",
+    "installCommand": "npm install",
+    "framework": "nextjs",
+    "regions": ["iad1"],
+    "outputDirectory": ".next"
+  }

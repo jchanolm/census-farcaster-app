@@ -3,12 +3,35 @@
 import { useState, useRef, useEffect } from 'react';
 import AgentResults from './AgentResults';
 import { processWithAgent } from '@/lib/agentHandler';
-import sdk, { initializeFrameSDK } from '@/lib/farcasterSdk';
+// Using an optional import to avoid errors if the lib doesn't exist
+let sdk: any;
+let initializeFrameSDK: () => void;
+try {
+  const farcasterSdk = require('@/lib/farcasterSdk');
+  sdk = farcasterSdk.default;
+  initializeFrameSDK = farcasterSdk.initializeFrameSDK;
+} catch (e) {
+  // The SDK might not be available, so create empty placeholders
+  sdk = {};
+  initializeFrameSDK = () => {};
+}
 
 type LogEntry = {
   message: string;
   type: 'info' | 'error' | 'success' | 'warning';
   timestamp: Date;
+};
+
+type Account = {
+  username: string;
+  platform?: string;
+};
+
+type BuilderCreds = {
+  smartContracts?: number;
+  framesDeployed?: number;
+  farcasterRewards?: number;
+  channelsModerated?: string[];
 };
 
 type SearchResult = {
@@ -18,17 +41,32 @@ type SearchResult = {
   nodeType?: string;
   score: number;
   location?: string;
-  accounts?: any[];
-  builderCreds?: {
-    smartContracts?: number;
-    framesDeployed?: number;
-    farcasterRewards?: number;
-    channelsModerated?: string[];
-  };
+  accounts?: Account[];
+  builderCreds?: BuilderCreds;
   relevantCasts?: {text: string}[];
   credentialCount?: number;
   pfpUrl?: string;
 };
+
+interface FarcasterUser {
+  username?: string;
+  fid?: number;
+}
+
+interface FarcasterClient {
+  added?: boolean;
+  safeAreaInsets?: {
+    top: number;
+    bottom: number;
+    left: number;
+    right: number;
+  };
+}
+
+interface FarcasterContext {
+  user?: FarcasterUser;
+  client?: FarcasterClient;
+}
 
 export default function SearchInterface() {
   const [query, setQuery] = useState('');
@@ -45,7 +83,7 @@ export default function SearchInterface() {
   const logsEndRef = useRef<HTMLDivElement>(null);
   
   // Add new state for the Farcaster context
-  const [farcasterContext, setFarcasterContext] = useState<any>(null);
+  const [farcasterContext, setFarcasterContext] = useState<FarcasterContext | null>(null);
 
   // Set light mode by default for Palantir grey vibe
   useEffect(() => {
@@ -64,9 +102,10 @@ export default function SearchInterface() {
         
         // Let the Farcaster client know your app is ready to be displayed
         // This will hide the splash screen
-        await sdk.actions.ready();
-        
-        addLog('✅ Connected to Farcaster client', 'success');
+        if (sdk.actions?.ready) {
+          await sdk.actions.ready();
+          addLog('✅ Connected to Farcaster client', 'success');
+        }
       } catch (error) {
         console.error('Failed to initialize Farcaster SDK:', error);
         addLog('❌ Failed to connect to Farcaster client', 'error');
@@ -77,7 +116,9 @@ export default function SearchInterface() {
     
     // Clean up listeners when component unmounts
     return () => {
-      sdk.removeAllListeners();
+      if (sdk.removeAllListeners) {
+        sdk.removeAllListeners();
+      }
     };
   }, []);
 
@@ -116,12 +157,16 @@ export default function SearchInterface() {
   const handleAddApp = async () => {
     try {
       addLog('🔄 Requesting to add app to Farcaster client...', 'info');
-      const result = await sdk.actions.addFrame();
-      
-      if (result.added) {
-        addLog('✅ App added to Farcaster client', 'success');
+      if (sdk.actions?.addFrame) {
+        const result = await sdk.actions.addFrame();
+        
+        if (result.added) {
+          addLog('✅ App added to Farcaster client', 'success');
+        } else {
+          addLog(`❌ App not added: ${result.reason}`, 'error');
+        }
       } else {
-        addLog(`❌ App not added: ${result.reason}`, 'error');
+        addLog('❌ SDK not properly initialized', 'error');
       }
     } catch (error) {
       console.error('Error adding app:', error);
@@ -209,15 +254,6 @@ export default function SearchInterface() {
   // Toggle dark/light mode
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
-  };
-
-  // View profile of a Farcaster user
-  const viewFarcasterProfile = async (fid: number) => {
-    try {
-      await sdk.actions.viewProfile({ fid });
-    } catch (error) {
-      console.error('Error viewing profile:', error);
-    }
   };
 
   // Get dynamic background and text colors based on Palantir grey vibe
