@@ -9,7 +9,6 @@ export default function SearchInterface() {
   const [isSearching, setIsSearching] = useState(false);
   const [isAgentProcessing, setIsAgentProcessing] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
-  const [results, setResults] = useState([]);
   const [agentResponse, setAgentResponse] = useState(null);
   const [darkMode, setDarkMode] = useState(false);
   const [typewriterText, setTypewriterText] = useState('');
