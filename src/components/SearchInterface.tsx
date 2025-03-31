@@ -243,18 +243,11 @@ export default function SearchInterface() {
               <span className="text-xs uppercase tracking-wider font-mono">System Logs</span>
             </div>
             <div className="bg-gray-900 text-gray-100 font-mono text-xs p-3 rounded h-48 overflow-y-auto">
-              {logs.map((log, index) => {
-                const color = 
-                  log.type === 'error' ? 'text-red-400' :
-                  log.type === 'success' ? 'text-green-400' :
-                  log.type === 'warning' ? 'text-yellow-400' : 'text-blue-300';
-                
-                return (
-                  <div key={index} className={`${color} mb-1`}>
-                    <span className="opacity-70">[{log.timestamp.toLocaleTimeString()}]</span> {log.message}
-                  </div>
-                );
-              })}
+              {logs.map((log, index) => (
+                <div key={index} className="mb-1">
+                  <span className="opacity-70">[{log.timestamp.toLocaleTimeString()}]</span> {log.message}
+                </div>
+              ))}
               <div ref={logsEndRef} />
             </div>
           </div>

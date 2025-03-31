@@ -7,8 +7,6 @@ export default function AgentResults({ agentResponse, darkMode }) {
   // Styling based on theme
   const bgColorWithOpacity = darkMode ? 'bg-black bg-opacity-80' : 'bg-[#f2f2f5] bg-opacity-90';
   const borderColor = darkMode ? 'border-gray-700' : 'border-gray-300';
-  const textColor = darkMode ? 'text-white' : 'text-[#333]';
-  const textMutedColor = darkMode ? 'text-[#aaa]' : 'text-[#777]';
   const cardBgColor = darkMode ? 'bg-[#0a0a15]' : 'bg-[#fff]';
   const cardBorderColor = darkMode ? 'border-gray-800' : 'border-gray-200';
   
