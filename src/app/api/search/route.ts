@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     CALL db.index.fulltext.queryNodes('casts', $query) YIELD node , score 
     MATCH (node)
     ORDER BY score DESC 
-    LIMIT 50
+    LIMIT 300
     MATCH (user:RealAssNigga:Account)-[r:POSTED]-(node)
     WITH user, avg(score) as totalScore, collect(distinct(node.text)) as castText
     return distinct user.username as username, user.bio as bio, user.fcRewardsEarned as fcRewardsEarned,
