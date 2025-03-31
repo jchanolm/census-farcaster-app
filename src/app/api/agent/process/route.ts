@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 
 // Format the data for the Deepseek prompt
-function formatPrompt(query, results) {
+function formatPrompt(query: string, results: any[]) {
   return `
 # TASK
 You are a builder intelligence assistant analyzing search results for web3 and Farcaster profiles.
@@ -54,7 +54,7 @@ Return your response as a JSON object with the following structure:
 `;
 }
 
-export async function POST(request) {
+export async function POST(request: Request) {
   try {
     console.log('🔍 Agent API: Request received');
     const { query, results } = await request.json();
@@ -138,16 +138,16 @@ export async function POST(request) {
       
     } catch (apiError) {
       console.error('❌ Agent API: API or parsing error:', apiError);
-      throw new Error(`API Error: ${apiError.message}`);
+      throw new Error(`API Error: ${apiError instanceof Error ? apiError.message : String(apiError)}`);
     }
     
     // Process the results: filter out irrelevant results and ensure all results have context
     console.log('🔍 Agent API: Processing results with agent analysis...');
-    const processedResults = [];
+    const processedResults: any[] = [];
     
     for (const result of results) {
       const agentResultData = parsedResponse.processedResults.find(
-        r => r.username === result.username
+        (r: any) => r.username === result.username
       );
       
       // Only include results that have relevance context and are marked as relevant

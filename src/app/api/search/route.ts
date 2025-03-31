@@ -3,7 +3,7 @@ import { runQuery } from '@/lib/neo4j';
 
 export const dynamic = 'force-dynamic';
 
-export async function POST(request) {
+export async function POST(request: Request) {
   try {
     const { query } = await request.json();
     
@@ -58,6 +58,6 @@ export async function POST(request) {
     
   } catch (error) {
     console.error('Error:', error);
-    return NextResponse.json({ error: 'Processing failed', detail: error.toString() }, { status: 500 });
+    return NextResponse.json({ error: 'Processing failed', detail: error instanceof Error ? error.message : String(error) }, { status: 500 });
   }
 }
