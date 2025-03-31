@@ -87,22 +87,6 @@ export default function AgentResults({ agentResponse, darkMode }: AgentResultsPr
                     }}
                   />
                 </div>
-            </div>
-            
-            {/* Relevance context */}
-            <div className="mt-2 text-sm border-l-2 border-blue-500 pl-3 py-1">
-              {result.relevanceContext}
-            </div>
-            
-            {/* Bio */}
-            <div className="mt-3 text-xs text-gray-500">
-              {result.bio}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
               ) : (
                 <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center mr-3">
                   <span className="text-gray-500 text-xs">{result.username.charAt(0).toUpperCase()}</span>
@@ -130,3 +114,20 @@ export default function AgentResults({ agentResponse, darkMode }: AgentResultsPr
                   VIEW
                 </a>
               </div>
+            </div>
+            
+            {/* Relevance context */}
+            <div className="mt-2 text-sm border-l-2 border-blue-500 pl-3 py-1">
+              {result.relevanceContext}
+            </div>
+            
+            {/* Bio */}
+            <div className="mt-3 text-xs text-gray-500">
+              {result.bio}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,18 @@
+{
+    "accountAssociation": {
+      "header": "WILL_BE_GENERATED",
+      "payload": "WILL_BE_GENERATED",
+      "signature": "WILL_BE_GENERATED"
+    },
+    "frame": {
+      "version": "1",
+      "name": "Quotient",
+      "homeUrl": "https://your-domain.com",
+      "iconUrl": "https://your-domain.com/icon.png",
+      "imageUrl": "https://your-domain.com/opengraph-image.png",
+      "buttonTitle": "Find Builders",
+      "splashImageUrl": "https://your-domain.com/splash.png",
+      "splashBackgroundColor": "#0057ff",
+      "webhookUrl": "https://your-domain.com/api/webhook"
+    }
+  }
