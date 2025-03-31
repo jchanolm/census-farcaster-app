@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Image from 'next/image';
 
 // Define types within the component for simplicity
 interface LinkedAccount {
@@ -119,7 +120,7 @@ export default function BuilderResultsTable({ results, query, darkMode }: Builde
   };
   
   // Format large numbers with commas and handle undefined/null/NaN values
-  const formatNumber = (num: any) => {
+  const formatNumber = (num: number | string | undefined | null) => {
     // Handle various possible value types
     if (num === undefined || num === null) return '0';
     
@@ -161,51 +162,6 @@ export default function BuilderResultsTable({ results, query, darkMode }: Builde
     return text.substring(0, maxLength) + '...';
   };
   
-  // Render a cast card
-  const renderCastCard = (cast: Cast, index: number) => {
-    return (
-      <div key={index} className={`p-3 rounded-md ${badgeBgColor} mb-2 border-l-2 border-[#0057ff]`}>
-        <div className="text-sm mb-2">{truncateText(cast.text)}</div>
-        <div className="flex justify-between items-center text-xs text-gray-500">
-          <div className="flex space-x-4">
-            <span className="flex items-center">
-              <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-              </svg>
-              {formatNumber(cast.likeCount)}
-            </span>
-            <span className="flex items-center">
-              <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              {formatNumber(cast.recastCount)}
-            </span>
-            <span className="flex items-center">
-              <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-              </svg>
-              {formatNumber(cast.replyCount)}
-            </span>
-          </div>
-          <div className="font-mono">{formatDate(cast.timestamp)}</div>
-        </div>
-        {cast.parentUrl && (
-          <div className="mt-2 text-xs">
-            <a 
-              href={cast.parentUrl} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="text-[#0057ff] hover:underline"
-            >
-              View on Warpcast →
-            </a>
-          </div>
-        )}
-      </div>
-    );
-  };
-  
   // Helper to render expandable row
   const renderExpandableRow = (result: SearchResult, index: number) => {
     const isExpanded = expandedRows[result.username] || false;
@@ -226,9 +182,6 @@ export default function BuilderResultsTable({ results, query, darkMode }: Builde
         : []
     };
     
-    // Normalize score to 0-100 range
-    const normalizedScore = Math.min(Math.max(Math.round(result.score * 100), 0), 100);
-    
     return (
       <>
         {/* Main row - always visible */}
@@ -241,8 +194,14 @@ export default function BuilderResultsTable({ results, query, darkMode }: Builde
           <td className="px-4 py-4">
             <div className="flex items-center space-x-3">
               {result.pfpUrl ? (
-                <div className="w-8 h-8 rounded-full overflow-hidden border border-gray-300">
-                  <img src={result.pfpUrl} alt={result.username} className="w-full h-full object-cover" />
+                <div className="w-8 h-8 rounded-full overflow-hidden border border-gray-300 relative">
+                  <Image 
+                    src={result.pfpUrl} 
+                    alt={result.username} 
+                    width={32} 
+                    height={32} 
+                    className="object-cover"
+                  />
                 </div>
               ) : (
                 <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
