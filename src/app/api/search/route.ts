@@ -62,7 +62,7 @@ export async function POST(request: Request) {
     LIMIT 300
     MATCH (user:Account:RealAssNigga)-[r:POSTED|REPLIED]->(node)
     WITH user, 
-         sum(score) as avgMentionQuality, 
+         avg(score) as avgMentionQuality, 
          collect(distinct(node.text) + " |hash: " + node.hash + "|channels" + node.mentionedChannels) as castText
     RETURN DISTINCT 
       user.username as username, 
