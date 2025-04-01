@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 function formatPrompt(query: string, results: any[]) {
   return `
 # MISSION
-You are an intelligence analyst processing Farcaster network data to identify relevant web3 builders and projects for lead generation and market research in the Base ecosystem.
+You are an intelligence analyst processing Farcaster network data to identify relevant web3 builders and projects for lead generation and market research.
 
 # CONTEXT
 The user has searched for: "${query}"
@@ -60,6 +60,8 @@ The search results contain the following fields:
   <div class="border-t border-gray-300 dark:border-gray-700 my-4"></div>
 
 The final output will be displayed in a card-based interface with borders separating each builder profile.
+
+If the user's query doesn't require an extensive list of builders, that's fine. 
 
 # DATA PAYLOAD
 ${JSON.stringify(results, null, 2)}
