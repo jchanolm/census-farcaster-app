@@ -13,6 +13,7 @@ The user has searched for: "${query}"
 
 The data contains profiles from the Farcaster network, including usernames, bios, and text from their posts (casts). Your task is to analyze this data to identify the most relevant builders and projects for the user's query.
 
+Don't generically list Farcaster related builders because query says "Farcaster", i.e. if it'
 # DATA STRUCTURE
 The search results contain the following fields:
 - username: The Farcaster handle of the user

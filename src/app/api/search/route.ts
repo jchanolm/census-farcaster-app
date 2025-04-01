@@ -42,8 +42,8 @@ export async function POST(request: Request) {
     const cleanQuery = sanitizeQuery(query);
     console.log(`Processing sanitized query: ${cleanQuery}`);
     
-    // Neo4j fulltext search query
-    const searchQuery = `
+    // Neo4j fulltext search query for casts
+    const castsSearchQuery = `
     CALL db.index.fulltext.queryNodes('casts', $query) YIELD node, score 
     MATCH (node)
     ORDER BY score DESC 
@@ -51,25 +51,46 @@ export async function POST(request: Request) {
     MATCH (user:Account)-[r:POSTED]-(node)
     WITH user, 
          avg(score) as avgMentionQuality, 
-         sum(score) as totalMentions, 
          collect(distinct(node.text) + " |hash: " + node.hash + "|channels" + node.mentionedChannels) as castText
     RETURN DISTINCT 
       user.username as username, 
       user.bio as bio, 
       user.pfpUrl as pfpUrl, 
       avgMentionQuality, 
-      totalMentions,
-      castText
+      castText,
+      'cast_match' as matchType
     ORDER BY avgMentionQuality DESC
     `;
     
-    // Execute the query
-    const records = await runQuery(searchQuery, { query: cleanQuery });
+    // Neo4j fulltext search query for wcAccounts
+    const accountsSearchQuery = `
+    CALL db.index.fulltext.queryNodes('wcAccounts', $query) YIELD node, score
+    WHERE score > 0.8
+    RETURN 
+      node.username as username,
+      node.bio as bio,
+      node.pfpUrl as pfpUrl,
+      score as avgMentionQuality,
+      [] as castText,
+      'account_match' as matchType
+    ORDER BY score DESC
+    LIMIT 15
+    `;
     
-    console.log(`Query returned ${records.length} records`);
+    // Execute the queries
+    console.log('Running casts query...');
+    const castsRecords = await runQuery(castsSearchQuery, { query: cleanQuery });
+    console.log(`Casts query returned ${castsRecords.length} records`);
+    
+    console.log('Running accounts query...');
+    const accountsRecords = await runQuery(accountsSearchQuery, { query: cleanQuery });
+    console.log(`Accounts query returned ${accountsRecords.length} records`);
+    
+    // Process all records - putting account matches first
+    const allRecords = [...accountsRecords, ...castsRecords];
     
     // Convert Neo4j records to plain objects
-    const results = records.map(record => {
+    const results = allRecords.map(record => {
       const plainObj: Record<string, any> = {};
       
       // Fix for the Symbol issue - convert record keys to strings
@@ -80,17 +101,28 @@ export async function POST(request: Request) {
         plainObj[key] = record.get(key);
       });
       
-      // Calculate a total score for sorting/ranking
-      plainObj.totalScore = plainObj.avgMentionQuality * plainObj.totalMentions;
+      // For cast_match records, calculate totalScore
+      if (plainObj.matchType === 'cast_match') {
+        // Calculate a total score for sorting/ranking
+        plainObj.totalScore = plainObj.avgMentionQuality * 10; // Weight factor
+      } else {
+        // For account_match, use avgMentionQuality as totalScore
+        plainObj.totalScore = plainObj.avgMentionQuality * 15; // Higher weight for direct matches
+      }
       
       return plainObj;
     });
+    
+    // Sort by totalScore
+    results.sort((a, b) => b.totalScore - a.totalScore);
   
     // Return results
     return NextResponse.json({ 
       query: cleanQuery, 
       results,
-      totalResults: results.length
+      totalResults: results.length,
+      castMatches: castsRecords.length,
+      accountMatches: accountsRecords.length
     });
     
   } catch (error) {
