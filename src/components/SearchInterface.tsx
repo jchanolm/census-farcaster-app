@@ -185,6 +185,7 @@ export default function SearchInterface() {
     
     try {
       addLog('📡 Calling search API...', 'info');
+      
       const response = await fetch('/api/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
