@@ -11,8 +11,8 @@
       "iconUrl": "https://frame.usequotient.xyz/icon.png",
       "imageUrl": "https://frame.usequotient.xyz/opengraph-image.png",
       "buttonTitle": "Explore Onchain Builders",
-      "splashImageUrl": "https://frame.usequotient.xyz/splash.png",
-      "splashBackgroundColor": "#8A63D2",
+      "splashImageUrl": "https://frame.usequotient.xyz/icon.png",
+      "splashBackgroundColor": "#000000",
       "webhookUrl": "https://frame.usequotient.xyz/api/webhook"
     }
   }
