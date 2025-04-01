@@ -118,7 +118,8 @@ export async function POST(request: Request) {
                 }
               ],
               temperature: 0.1,
-              stream: true
+              stream: true,
+              max_tokens: 8192
             })
           });
           
