@@ -77,9 +77,9 @@ export async function POST(request: Request) {
     // Neo4j fulltext search query for wcAccounts
     const accountsSearchQuery = `
     CALL db.index.fulltext.queryNodes('wcAccounts', $cleanQuery) YIELD node, score
-    WHERE score > 3
+    WHERE score > 5
     ORDER BY score DESC 
-    LIMIT 15
+    LIMIT 5
     RETURN 
       node.username as username,
       node.bio as bio,
