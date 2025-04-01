@@ -22,7 +22,7 @@ function sanitizeQuery(query: string): string {
 
 /**
  * Handles the search query for Farcaster network builders
- * @param request - The incoming HTTP request
+ * @param request - 
  * @returns JSON response with search results or error
  */
 export async function POST(request: Request) {
