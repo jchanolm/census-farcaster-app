@@ -98,7 +98,7 @@ export default function SearchInterface() {
   const [isAgentProcessing, setIsAgentProcessing] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [agentReport, setAgentReport] = useState<string>('');
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(true);
   const [typewriterText, setTypewriterText] = useState('');
   const [typewriterIndex, setTypewriterIndex] = useState(0);
   const [logs, setLogs] = useState<LogEntry[]>([]);

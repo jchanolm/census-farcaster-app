@@ -59,7 +59,7 @@ export async function POST(request: Request) {
     WHERE score > 3
     MATCH (node)
     ORDER BY score DESC 
-    LIMIT 150
+    LIMIT 200
     MATCH (user:Account:RealAssNigga)-[r:POSTED]->(node)
     WITH user, 
          avg(score) as avgMentionQuality, 

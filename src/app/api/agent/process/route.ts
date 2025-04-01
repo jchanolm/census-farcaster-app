@@ -19,7 +19,6 @@ The search results contain the following fields:
 - bio: User's profile description
 - castText: Casts related to the query
 - pfp: Profile picture URL (if available)
-- totalScore: Average relevance score for casts associated with the user  
 
 # RESPONSE GUIDELINES
 ## Understanding User Intent
@@ -128,7 +127,7 @@ export async function POST(request: Request) {
               ],
               temperature: 0.1,
               stream: true,
-              max_tokens: 6000
+              max_tokens: 7500
             })
           });
           
