@@ -13,7 +13,6 @@ The user has searched for: "${query}"
 
 The data contains profiles from the Farcaster network, including usernames, bios, and text from their posts (casts). Your task is to analyze this data to identify the most relevant builders and projects for the user's query.
 
-Don't generically list Farcaster related builders because query says "Farcaster", i.e. if it'
 # DATA STRUCTURE
 The search results contain the following fields:
 - username: The Farcaster handle of the user
@@ -77,7 +76,7 @@ ${JSON.stringify(results, null, 2)}
 export async function POST(request: Request) {
   try {
     console.log('🔍 Agent API: Request received');
-    const { query, results } = await request.json();
+    const { originalQuery, query, results } = await request.json();
     
     if (!query || !results || !Array.isArray(results)) {
       console.log('❌ Agent API: Invalid input', { query, resultsProvided: !!results, isArray: Array.isArray(results) });
@@ -86,8 +85,8 @@ export async function POST(request: Request) {
     
     console.log(`📊 Agent API: Processing ${results.length} results for query: "${query}"`);
     
-    // Format the prompt for the model
-    const prompt = formatPrompt(query, results);
+    // Format the prompt for the model using the original or processed query
+    const prompt = formatPrompt(originalQuery || query, results);
     
     // Set up streaming response
     const encoder = new TextEncoder();

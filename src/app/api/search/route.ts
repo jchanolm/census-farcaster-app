@@ -9,17 +9,32 @@ export const dynamic = 'force-dynamic';
  * @param query - The raw input query
  * @returns A cleaned and safe query string
  */
-function sanitizeQuery(query: string): string {
+function sanitizeQuery(query: string): { 
+  originalQuery: string; 
+  cleanQuery: string; 
+} {
+  // Handle null or undefined input
+  if (!query || typeof query !== 'string') {
+    return { 
+      originalQuery: '', 
+      cleanQuery: '' 
+    };
+  }
+
   // Remove special characters that can break Lucene parsing
   const sanitized = query
-    .replace(/[\/\*\+\-\&\|\!\(\)\{\}\[\]\^"~\?:\\/]/g, ' ') // Remove special characters
-    .replace(/\s+/g, ' ') // Collapse multiple spaces
-    .trim(); // Trim leading/trailing whitespace
-
+  .replace(/[\/\*\+\-\&\|\!\(\)\{\}\[\]\^"~\?:\\/]/g, ' ') // Remove special characters
+  .replace(/\s+/g, ' ') // Collapse multiple spaces
+  .replace(/\bbuild\w*\b/gi, '') // Remove 'build' and words starting with 'build'
+  .replace(/\bfarcaster\b/gi, '') // Remove 'farcaster'
+  .replace(/\b(the|a|an|and|or|but|in|on|at|to|for|of|with|by)\b/gi, '') // Remove common stop words
+  .trim(); // Trim leading/trailing whitespace
   // Limit query length to prevent excessive processing
-  return sanitized.slice(0, 100);
+  return { 
+    originalQuery: query, 
+    cleanQuery: sanitized.slice(0, 100) 
+  };
 }
-
 /**
  * Handles the search query for Farcaster network builders
  * @param request - The incoming HTTP request
@@ -45,7 +60,7 @@ export async function POST(request: Request) {
     // Neo4j fulltext search query for casts
     const castsSearchQuery = `
     CALL db.index.fulltext.queryNodes('casts', $query) YIELD node, score 
-    WHERE score > .8
+    WHERE score > 3
     MATCH (node)
     ORDER BY score DESC 
     LIMIT 150
@@ -66,7 +81,7 @@ export async function POST(request: Request) {
     // Neo4j fulltext search query for wcAccounts
     const accountsSearchQuery = `
     CALL db.index.fulltext.queryNodes('wcAccounts', $query) YIELD node, score
-    WHERE score > 0.8
+    WHERE score > 3
     ORDER BY score DESC 
     LIMIT 10
     RETURN 
