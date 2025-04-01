@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { sdk } from '@farcaster/frame-sdk';
-import AddFrameButton from '@/components/AddFrameButton'; // Make sure the path is correct
+import AddFrameButton from '@/components/AddFrameButton';
 
 type LogEntry = {
   message: string;
@@ -97,7 +97,7 @@ export default function SearchInterface() {
   const [isSearching, setIsSearching] = useState(false);
   const [isAgentProcessing, setIsAgentProcessing] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
-  const [agentReport, setAgentReport] = useState<string>('');
+  const [agentReport, setAgentReport] = useState('');
   const [darkMode, setDarkMode] = useState(false);
   const [typewriterText, setTypewriterText] = useState('');
   const [typewriterIndex, setTypewriterIndex] = useState(0);
@@ -106,7 +106,6 @@ export default function SearchInterface() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const logsEndRef = useRef<HTMLDivElement>(null);
 
-  
   // Set dark mode by default
   useEffect(() => {
     setDarkMode(true);
@@ -204,20 +203,24 @@ export default function SearchInterface() {
         addLog(`🧠 Starting agent analysis of ${data.results.length} results...`, 'info');
         
         try {
-          // Call the agent API directly to get the streaming response
+          // Call the agent API with the original and processed query
           const agentResponse = await fetch('/api/agent/process', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ query, results: data.results }),
+            body: JSON.stringify({ 
+              originalQuery: data.originalQuery || query, 
+              query: data.query || query, 
+              results: data.results 
+            }),
           });
           
           if (!agentResponse.ok) {
             throw new Error(`Agent API error: ${agentResponse.status}`);
           }
           
-          // Process the streaming response
+          // Process the streaming response - SIMPLIFIED APPROACH
           const reader = agentResponse.body?.getReader();
           const decoder = new TextDecoder();
           
@@ -228,33 +231,10 @@ export default function SearchInterface() {
               const { done, value } = await reader.read();
               if (done) break;
               
-              // Decode and add to the report content
+              // Simply decode and append the chunk to our report
               const chunk = decoder.decode(value, { stream: true });
-              
-              // Parse SSE format
-              const lines = chunk.split('\n');
-              for (const line of lines) {
-                if (line.startsWith('data:')) {
-                  try {
-                    const content = line.substring(5).trim();
-                    if (content === '[DONE]') continue;
-                    
-                    const jsonData = JSON.parse(content);
-                    if (jsonData.choices && jsonData.choices[0].delta && jsonData.choices[0].delta.content) {
-                      const textChunk = jsonData.choices[0].delta.content;
-                      reportContent += textChunk;
-                      setAgentReport(reportContent);
-                    }
-                  } catch (e) {
-                    // Fallback for non-JSON data
-                    const textContent = line.substring(5).trim();
-                    if (textContent && textContent !== '[DONE]') {
-                      reportContent += textContent;
-                      setAgentReport(reportContent);
-                    }
-                  }
-                }
-              }
+              reportContent += chunk;
+              setAgentReport(reportContent);
             }
             
             addLog(`✅ Agent analysis complete - generated report`, 'success');
