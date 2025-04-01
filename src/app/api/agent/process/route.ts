@@ -45,21 +45,15 @@ The search results contain the following fields:
    Place each relevant builder / groups of related and relevant casts into a card.
    Searches for builders should be builder-focused. More open-ended queries might be more cast-focused.
    - Username with styling for emphasis, linking to user profile: https://warpcast.com/username 
-   - Relevance indicator using the following format:
-     [●●●●●] = Very High Relevance
-     [●●●●○] = High Relevance
-     [●●●○○] = Medium Relevance
-     [●●○○○] = Moderate Relevance
-     [●○○○○] = Low Relevance
+   - Relevance indicator using emojis, (be consistent):
    - Brief relevance assessment (1-2 sentences)
    - Evidence from the data associated to them, i.e. bio, casts, etc (you can link to cast with https://warpcast.com/username/hash) or bio (2-3 bullet points of direct evidence)
    - Clear separation between different builders
 
 # TECHNICAL FORMATTING
 - Be crisp and inventive with your fomratting. You may use bullets, emojis, dividers, info boxes, text tables, whatever you think will be effective.
-- Organize builder profiles with clear visual hierarchy
-- Insert a divider between builders using:
-  <div class="border-t border-gray-300 dark:border-gray-700 my-4"></div>
+- Organize builder profiles with clear visual hierarchy.
+- Insert a divider between builders 
 
 The final output will be displayed in a card-based interface with borders separating each builder profile.
 
