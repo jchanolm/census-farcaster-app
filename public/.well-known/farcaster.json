@@ -7,12 +7,12 @@
     "frame": {
       "version": "1",
       "name": "Quotient",
-      "homeUrl": "https://your-domain.com",
-      "iconUrl": "https://your-domain.com/icon.png",
-      "imageUrl": "https://your-domain.com/opengraph-image.png",
-      "buttonTitle": "Find Builders",
-      "splashImageUrl": "https://your-domain.com/splash.png",
-      "splashBackgroundColor": "#0057ff",
-      "webhookUrl": "https://your-domain.com/api/webhook"
+      "homeUrl": "https://frame.usequotient.xyz",
+      "iconUrl": "https://frame.usequotient.xyz/icon.png",
+      "imageUrl": "https://frame.usequotient.xyz/opengraph-image.png",
+      "buttonTitle": "Explore Onchain Builders",
+      "splashImageUrl": "https://frame.usequotient.xyz/splash.png",
+      "splashBackgroundColor": "#8A63D2",
+      "webhookUrl": "https://frame.usequotient.xyz/api/webhook"
     }
   }
