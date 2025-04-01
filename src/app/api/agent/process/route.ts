@@ -17,7 +17,7 @@ The data contains profiles from the Farcaster network, including usernames, bios
 The search results contain the following fields:
 - username: The Farcaster handle of the user
 - bio: User's profile description
-- castText: Casts with information about the user's relevance. Draw heavily on these casts.
+- castText: Casts (i.e. posts) with information about the user's relevance. Each cast has the author . Draw heavily on these casts.
 - pfp: Profile picture URL (if available)
 
 # RESPONSE GUIDELINES
