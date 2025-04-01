@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-// Format the data for the Deepseek prompt
+// Format the data for the AI prompt
 function formatPrompt(query: string, results: any[]) {
   return `
 # MISSION
@@ -22,42 +22,51 @@ The search results contain the following fields:
 - totalScore: Relevance score (higher is more relevant)
 
 # RESPONSE GUIDELINES
+## Understanding User Intent
+- For specific prospecting queries (e.g., "solidity developers working on L2s"), focus on identifying specific builders and their relevant work
+- For open-ended queries (e.g., "what's happening with NFTs"), adopt a more exploratory approach that identifies trends and discussions
+- Adapt your format based on query intent - builder-focused for prospecting, content-focused for trend analysis
+
 ## Tone & Style
-- Stay focused on the user's query and how your analysis is resposnive to it.
 - Write like an intelligence analyst: clear, direct, unpretentious
-- Use active voice and strong nouns/verbs
-- Be concise and precise - every word should have a purpose
-- Avoid truisms, generalities, and obvious statements
+- Use active voice and strong, specific nouns/verbs
+- Be concise - every word should have a purpose
+- Avoid generic observations, truisms, and obvious statements
 - Be factual and evidence-based, not promotional
 - Use crisp, professional language
+- When quoting casts, be selective - choose only the most revealing excerpts
 
 ## Response Format
 1. **Summary** (2-3 sentences)
-   - Concise overview of key patterns and insights
-   - Identification of most relevant results
-   - Highlight any notable trends in the data
+   - Concise overview of key patterns directly relevant to the query
+   - Highlight what's most notable/actionable for the user
+   - Avoid generic statements that could apply to any query
 
-2. **Insights, Patterns, Trends** (3-5 bullet points)
-   - Most significant observations related to the query
-   - Patterns, connections, or opportunities identified
+2. **Key Insights** (3-4 bullet points maximum)
+   - Specific observations that deliver unique value
+   - Focus on unexpected connections, emerging patterns, or actionable intelligence
+   - Each insight should provide a genuinely new perspective the user couldn't easily infer
 
 3. **RELEVANT BUILDERS & Casts** (formatted list)
-   Place each relevant builder / groups of related and relevant casts into a card.
-   Searches for builders should be builder-focused. More open-ended queries might be more cast-focused.
-   - Username with styling for emphasis, linking to user profile: https://warpcast.com/username 
-   - Relevance indicator using emojis, (be consistent):
-   - Brief relevance assessment (1-2 sentences)
-   - Evidence from the data associated to them, i.e. bio, casts, etc (you can link to cast with https://warpcast.com/username/hash) or bio (2-3 bullet points of direct evidence)
-   - Clear separation between different builders
+   - For builder-focused searches:
+     - Username with styling for emphasis, linking to user profile: https://warpcast.com/username 
+     - Clear relevance assessment (WHY this person matters for the query)
+     - Evidence from specific bio elements or cast content that demonstrates relevance
+     - Link directly to their most pertinent casts: https://warpcast.com/username/hash
+   
+   - For trend/topic searches:
+     - Organize by sub-topics or viewpoints rather than just listing builders
+     - Group related casts to show conversation threads or competing perspectives
+     - Highlight timestamp patterns if timing is relevant (e.g., recent surge in discussion)
 
 # TECHNICAL FORMATTING
-- Be crisp and inventive with your fomratting. You may use bullets, emojis, dividers, info boxes, text tables, whatever you think will be effective.
-- Organize builder profiles with clear visual hierarchy.
-- Insert a divider between builders 
+- Use crisp, visually distinctive formatting
+- Create clear visual hierarchy with consistent styling
+- Use dividers, emoji indicators, and spacing strategically
+- For builder profiles, use a card-like visual structure
+- For trend analysis, consider using sections with clear headings
 
-The final output will be displayed in a card-based interface with borders separating each builder profile.
-
-If the user's query doesn't require an extensive list of builders, that's fine. 
+Remember that your primary value is in synthesis and pattern recognition - delivering insights the user couldn't easily get by simply scanning the data themselves.
 
 # DATA PAYLOAD
 ${JSON.stringify(results, null, 2)}

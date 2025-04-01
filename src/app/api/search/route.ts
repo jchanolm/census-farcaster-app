@@ -48,7 +48,7 @@ export async function POST(request: Request) {
     MATCH (node)
     ORDER BY score DESC 
     LIMIT 300
-    MATCH (user:RealAssNigga:Account)-[r:POSTED]-(node)
+    MATCH (user:Account)-[r:POSTED]-(node)
     WITH user, 
          avg(score) as avgMentionQuality, 
          sum(score) as totalMentions, 
