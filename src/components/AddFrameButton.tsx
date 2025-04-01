@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { sdk } from '@farcaster/frame-sdk';
 
 export default function AddFrameButton() {
@@ -8,17 +8,33 @@ export default function AddFrameButton() {
   const [added, setAdded] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Check if frame is already added when component mounts
+  useEffect(() => {
+    const checkIfAdded = async () => {
+      try {
+        const context = await sdk.context;
+        if (context.client?.added) {
+          setAdded(true);
+        }
+      } catch (err) {
+        console.error('Error checking if frame is added:', err);
+      }
+    };
+    
+    checkIfAdded();
+  }, []);
+
   const handleAddFrame = async () => {
     try {
       setIsAdding(true);
       setError(null);
       
       // Call the addFrame method
-      await sdk.actions.addFrame();
+      const result = await sdk.actions.addFrame();
       
       // If we get here, the frame was added successfully
       setAdded(true);
-      console.log('Frame added successfully');
+      console.log('Frame added successfully', result);
       
     } catch (err) {
       // Handle any errors
