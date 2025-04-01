@@ -6,17 +6,18 @@ import { sdk } from '@farcaster/frame-sdk';
 export default function AddFrameButton() {
   const [isAdding, setIsAdding] = useState(false);
   const [added, setAdded] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(null);
 
   // Check if frame is already added when component mounts
   useEffect(() => {
     const checkIfAdded = async () => {
       try {
         const context = await sdk.context;
-        if (context.client?.added) {
+        if (context?.client?.added) {
           setAdded(true);
         }
       } catch (err) {
+        // Just log the error but don't show it to user when checking
         console.error('Error checking if frame is added:', err);
       }
     };
@@ -29,16 +30,21 @@ export default function AddFrameButton() {
       setIsAdding(true);
       setError(null);
       
-      // Call the addFrame method - it returns void according to docs
+      // Simply call addFrame() without checking a return value
       await sdk.actions.addFrame();
       
-      // If we get here without an error, the frame was added successfully
+      // If we reach this point without an error, it was successful
       setAdded(true);
-      console.log('Frame added successfully');
       
     } catch (err) {
-      // Handle any errors
-      setError(`Error: ${err instanceof Error ? err.message : String(err)}`);
+      // Handle known error types from documentation
+      if (err.message?.includes('rejected_by_user')) {
+        setError('User rejected adding the app');
+      } else if (err.message?.includes('invalid_domain_manifest')) {
+        setError('Invalid domain manifest');
+      } else {
+        setError(`Error: ${err instanceof Error ? err.message : String(err)}`);
+      }
       console.error('Error adding frame:', err);
     } finally {
       setIsAdding(false);
