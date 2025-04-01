@@ -59,8 +59,8 @@ export async function POST(request: Request) {
     WHERE score > 3
     MATCH (node)
     ORDER BY score DESC 
-    LIMIT 200
-    MATCH (user:Account:RealAssNigga)-[r:POSTED]->(node)
+    LIMIT 250
+    MATCH (user:Account:RealAssNigga)-[r:POSTED|REPLIED]->(node)
     WITH user, 
          avg(score) as avgMentionQuality, 
          collect(distinct(node.text) + " |hash: " + node.hash + "|channels" + node.mentionedChannels) as castText
@@ -79,7 +79,7 @@ export async function POST(request: Request) {
     CALL db.index.fulltext.queryNodes('wcAccounts', $cleanQuery) YIELD node, score
     WHERE score > 3
     ORDER BY score DESC 
-    LIMIT 10
+    LIMIT 15
     RETURN 
       node.username as username,
       node.bio as bio,

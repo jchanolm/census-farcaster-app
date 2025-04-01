@@ -2,7 +2,8 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { sdk } from '@farcaster/frame-sdk';
-import AddFrameButton from '@/components/AddFrameButton'; // Make sure the path is correct
+import AddFrameButton from '@/components/AddFrameButton';
+import ReactMarkdown from 'react-markdown';
 
 type LogEntry = {
   message: string;
@@ -46,32 +47,45 @@ function AgentReport({ report, darkMode, isLoading }) {
   
   if (!report) return null;
   
-  // Format the text with basic HTML formatting
-  const formatText = (text) => {
-    // Process the text in steps
-    let formatted = text;
+  // Use higher contrast text colors based on dark mode
+  const headerColor = darkMode ? 'text-[#88b3ff]' : 'text-[#0046cc]'; // Lighter blue for dark mode, darker blue for light mode
+  const accentColor = darkMode ? 'text-white' : 'text-[#0046cc]'; // White text for dark mode, dark blue for light mode
+  
+  // Custom renderer for React Markdown components
+  const components = {
+    // Headings
+    h1: ({node, ...props}) => <h1 className={`${headerColor} font-mono text-lg uppercase tracking-wider font-medium my-3`} {...props} />,
+    h2: ({node, ...props}) => <h2 className={`${headerColor} font-mono text-md uppercase tracking-wider font-medium my-3`} {...props} />,
+    h3: ({node, ...props}) => <h3 className={`${headerColor} font-mono text-sm uppercase tracking-wider font-medium my-3`} {...props} />,
     
-    // Format headers (either # style or ALL CAPS style)
-    formatted = formatted.replace(/^(#+)\s+(.+)$/gm, '<h3 class="text-[#0057ff] font-mono text-sm uppercase tracking-wider font-medium my-3">$2</h3>');
-    formatted = formatted.replace(/^([A-Z][A-Z\s]+[A-Z])$/gm, '<h3 class="text-[#0057ff] font-mono text-sm uppercase tracking-wider font-medium my-3">$1</h3>');
+    // Links (for @username mentions)
+    a: ({node, ...props}) => {
+      // Check if this is a username mention
+      if (props.href?.startsWith('https://warpcast.com/')) {
+        return <a className={`${accentColor} font-mono hover:underline`} target="_blank" {...props} />;
+      }
+      return <a className={`${accentColor} hover:underline`} target="_blank" {...props} />;
+    },
     
-    // Format numbered items (like "1. Item")
-    formatted = formatted.replace(/^(\d+\.\s+)(.+)$/gm, '<div class="flex items-start mb-2"><span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#0057ff] bg-opacity-10 text-[#0057ff] text-xs font-medium mr-3 flex-shrink-0">$1</span><span>$2</span></div>');
+    // Lists with custom styling
+    li: ({node, ...props}) => {
+      return (
+        <li className="flex items-start mb-2">
+          <span className={`inline-flex items-center justify-center w-5 h-5 rounded-full ${darkMode ? 'bg-[#88b3ff] bg-opacity-20 text-[#88b3ff]' : 'bg-[#0046cc] bg-opacity-10 text-[#0046cc]'} text-xs font-medium mr-3 flex-shrink-0`}>•</span>
+          <span>{props.children}</span>
+        </li>
+      );
+    },
     
-    // Format bold text
-    formatted = formatted.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    // Custom paragraphs
+    p: ({node, ...props}) => <p className="mb-3" {...props} />,
     
-    // Format username mentions
-    formatted = formatted.replace(/@([a-zA-Z0-9_]+)/g, '<a href="https://warpcast.com/$1" target="_blank" class="text-[#0057ff] font-mono">@$1</a>');
-    
-    // Handle paragraphs (preserve empty lines)
-    formatted = formatted.replace(/\n\n/g, '</p><p class="mb-3">');
-    
-    // Wrap the entire text in a paragraph tag
-    formatted = '<p class="mb-3">' + formatted + '</p>';
-    
-    return { __html: formatted };
+    // Bold text
+    strong: ({node, ...props}) => <strong className={`${accentColor} font-semibold`} {...props} />
   };
+  
+  // Process username mentions before passing to ReactMarkdown
+  const processedReport = report.replace(/@([a-zA-Z0-9_]+)/g, '[@$1](https://warpcast.com/$1)');
   
   return (
     <div className={`${darkMode ? 'bg-black bg-opacity-80' : 'bg-[#f2f2f5] bg-opacity-90'} rounded-lg border ${darkMode ? 'border-gray-700' : 'border-gray-300'} p-5 backdrop-blur-sm mb-6 w-full`}>
@@ -84,10 +98,11 @@ function AgentReport({ report, darkMode, isLoading }) {
         </div>
       </div>
       
-      <div 
-        className={`text-sm ${darkMode ? 'text-white' : 'text-[#333]'} font-sans leading-relaxed`}
-        dangerouslySetInnerHTML={formatText(report)}
-      />
+      <div className={`text-sm ${darkMode ? 'text-white' : 'text-[#333]'} font-sans leading-relaxed`}>
+        <ReactMarkdown components={components}>
+          {processedReport}
+        </ReactMarkdown>
+      </div>
     </div>
   );
 }
@@ -373,7 +388,7 @@ export default function SearchInterface() {
             {isSearching ? (
               <>
                 <span className="w-2 h-2 bg-[#0057ff] rounded-full mr-2"></span>
-                <span>Scanning builder constellation...</span>
+                <span>Scanning builders...</span>
               </>
             ) : isAgentProcessing ? (
               <>
