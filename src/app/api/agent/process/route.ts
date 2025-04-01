@@ -34,6 +34,7 @@ The search results contain the following fields:
 1. **Summary** (2-3 sentences)
    - Concise overview of key patterns and insights
    - Identification of most relevant results
+   - Highlight any notable trends in the data
 
 2. **Insights, Patterns, Trends** (3-5 bullet points)
    - Most significant observations related to the query
