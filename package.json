@@ -9,7 +9,9 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@farcaster/frame-node": "^0.0.18",
     "@farcaster/frame-sdk": "^0.0.31",
+    "@farcaster/frame-wagmi-connector": "^0.0.19",
     "@privy-io/react-auth": "^2.7.2",
     "highlight.js": "^11.11.1",
     "marked": "^15.0.7",

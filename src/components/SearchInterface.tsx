@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { sdk } from '@farcaster/frame-sdk';
+import AddFrameButton from '@/components/AddFrameButton'; // Make sure the path is correct
 
 type LogEntry = {
   message: string;
@@ -104,6 +106,22 @@ export default function SearchInterface() {
   const inputRef = useRef<HTMLInputElement>(null);
   const logsEndRef = useRef<HTMLDivElement>(null);
 
+  // Initialize the Farcaster SDK
+  useEffect(() => {
+    // Call ready when the component has mounted
+    const initializeApp = async () => {
+      try {
+        // Hide the splash screen
+        await sdk.actions.ready();
+        console.log('App is ready');
+      } catch (error) {
+        console.error('Error initializing app:', error);
+      }
+    };
+  
+    initializeApp();
+  }, []);
+  
   // Set light mode by default
   useEffect(() => {
     setDarkMode(false);
@@ -280,8 +298,10 @@ export default function SearchInterface() {
 
   return (
     <div className={`w-full min-h-screen ${darkMode ? 'bg-black' : 'bg-[#e5e5e8]'} ${textColor} relative flex flex-col items-center`}>
-      {/* Header with theme toggle */}
-      <header className="w-full py-4 px-6 flex justify-end">
+      {/* Header with theme toggle and Add Frame button */}
+      <header className="w-full py-4 px-6 flex justify-between items-center">
+        <AddFrameButton />
+        
         {/* Theme toggle button */}
         <button
           onClick={toggleDarkMode}
