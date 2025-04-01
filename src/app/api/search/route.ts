@@ -27,7 +27,7 @@ function sanitizeQuery(query: string): {
   // Limit query length to prevent excessive processing
   return { 
     originalQuery: query, 
-    cleanQuery: sanitized.slice(0, 100) 
+    cleanQuery: sanitized
   };
 }
 
@@ -59,10 +59,10 @@ export async function POST(request: Request) {
     WHERE score > 3
     MATCH (node)
     ORDER BY score DESC 
-    LIMIT 250
+    LIMIT 300
     MATCH (user:Account:RealAssNigga)-[r:POSTED|REPLIED]->(node)
     WITH user, 
-         avg(score) as avgMentionQuality, 
+         sum(score) as avgMentionQuality, 
          collect(distinct(node.text) + " |hash: " + node.hash + "|channels" + node.mentionedChannels) as castText
     RETURN DISTINCT 
       user.username as username, 
