@@ -106,25 +106,10 @@ export default function SearchInterface() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const logsEndRef = useRef<HTMLDivElement>(null);
 
-  // Initialize the Farcaster SDK
-  useEffect(() => {
-    // Call ready when the component has mounted
-    const initializeApp = async () => {
-      try {
-        // Hide the splash screen
-        await sdk.actions.ready();
-        console.log('App is ready');
-      } catch (error) {
-        console.error('Error initializing app:', error);
-      }
-    };
   
-    initializeApp();
-  }, []);
-  
-  // Set light mode by default
+  // Set dark mode by default
   useEffect(() => {
-    setDarkMode(false);
+    setDarkMode(true);
   }, []);
 
   // Focus the input on component mount
