@@ -29,18 +29,12 @@ export default function AddFrameButton() {
       setIsAdding(true);
       setError(null);
       
-      // Call the addFrame method
-      const result = await sdk.actions.addFrame();
+      // Call the addFrame method - it returns void according to docs
+      await sdk.actions.addFrame();
       
-      // Check if result exists and handle accordingly
-      if (result && result.added) {
-        setAdded(true);
-        console.log('Frame added successfully', result);
-      } else {
-        // Handle case where result exists but added is false
-        const reason = result?.reason || 'Unknown reason';
-        setError(`Frame not added: ${reason}`);
-      }
+      // If we get here without an error, the frame was added successfully
+      setAdded(true);
+      console.log('Frame added successfully');
       
     } catch (err) {
       // Handle any errors
