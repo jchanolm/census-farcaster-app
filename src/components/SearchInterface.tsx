@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { sdk } from '@farcaster/frame-sdk';
-import AddFrameButton from '@/components/AddFrameButton';
+import AddFrameButton from '@/components/AddFrameButton'; // Make sure the path is correct
 
 type LogEntry = {
   message: string;
@@ -97,7 +97,7 @@ export default function SearchInterface() {
   const [isSearching, setIsSearching] = useState(false);
   const [isAgentProcessing, setIsAgentProcessing] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
-  const [agentReport, setAgentReport] = useState('');
+  const [agentReport, setAgentReport] = useState<string>('');
   const [darkMode, setDarkMode] = useState(false);
   const [typewriterText, setTypewriterText] = useState('');
   const [typewriterIndex, setTypewriterIndex] = useState(0);
@@ -106,9 +106,25 @@ export default function SearchInterface() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const logsEndRef = useRef<HTMLDivElement>(null);
 
-  // Set dark mode by default
+  // Initialize the Farcaster SDK
   useEffect(() => {
-    setDarkMode(true);
+    // Call ready when the component has mounted
+    const initializeApp = async () => {
+      try {
+        // Hide the splash screen
+        await sdk.actions.ready();
+        console.log('App is ready');
+      } catch (error) {
+        console.error('Error initializing app:', error);
+      }
+    };
+  
+    initializeApp();
+  }, []);
+  
+  // Set light mode by default
+  useEffect(() => {
+    setDarkMode(false);
   }, []);
 
   // Focus the input on component mount
@@ -185,6 +201,10 @@ export default function SearchInterface() {
       // Log basic results
       if (data.results && data.results.length > 0) {
         addLog(`✅ Search complete - found ${data.results.length} results`, 'success');
+        
+        // Sample logging for first result
+        const firstResult = data.results[0];
+        addLog(`📝 First result: ${firstResult.username || 'Unknown'}`, 'info');
       } else {
         addLog(`✅ Search complete - found ${data.results?.length || 0} results`, 'success');
       }
@@ -199,25 +219,61 @@ export default function SearchInterface() {
         addLog(`🧠 Starting agent analysis of ${data.results.length} results...`, 'info');
         
         try {
-          // Call the agent API with the original and processed query
+          // Call the agent API directly to get the streaming response
           const agentResponse = await fetch('/api/agent/process', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ 
-              originalQuery: data.originalQuery || query, 
-              query: data.query || query, 
-              results: data.results 
-            }),
+            body: JSON.stringify({ query, results: data.results }),
           });
           
           if (!agentResponse.ok) {
             throw new Error(`Agent API error: ${agentResponse.status}`);
           }
           
-          // Process the streaming response - ENHANCED APPROACH
-          await processStreamResponse(agentResponse);
+          // Process the streaming response
+          const reader = agentResponse.body?.getReader();
+          const decoder = new TextDecoder();
+          
+          if (reader) {
+            let reportContent = '';
+            
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              
+              // Decode and add to the report content
+              const chunk = decoder.decode(value, { stream: true });
+              
+              // Parse SSE format
+              const lines = chunk.split('\n');
+              for (const line of lines) {
+                if (line.startsWith('data:')) {
+                  try {
+                    const content = line.substring(5).trim();
+                    if (content === '[DONE]') continue;
+                    
+                    const jsonData = JSON.parse(content);
+                    if (jsonData.choices && jsonData.choices[0].delta && jsonData.choices[0].delta.content) {
+                      const textChunk = jsonData.choices[0].delta.content;
+                      reportContent += textChunk;
+                      setAgentReport(reportContent);
+                    }
+                  } catch (e) {
+                    // Fallback for non-JSON data
+                    const textContent = line.substring(5).trim();
+                    if (textContent && textContent !== '[DONE]') {
+                      reportContent += textContent;
+                      setAgentReport(reportContent);
+                    }
+                  }
+                }
+              }
+            }
+            
+            addLog(`✅ Agent analysis complete - generated report`, 'success');
+          }
           
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -235,81 +291,6 @@ export default function SearchInterface() {
       addLog(`❌ Search error: ${errorMessage}`, 'error');
       console.error('Search error:', error);
       setIsSearching(false);
-    }
-  };
-
-  // Process streaming SSE response
-  const processStreamResponse = async (response: Response) => {
-    // Set up an event source to handle SSE
-    const reader = response.body?.getReader();
-    const decoder = new TextDecoder();
-    
-    if (!reader) {
-      throw new Error('Stream reader not available');
-    }
-    
-    let reportContent = '';
-    let buffer = '';
-    
-    try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        
-        // Decode the chunk
-        const chunk = decoder.decode(value, { stream: true });
-        buffer += chunk;
-        
-        // Split into SSE messages at double newlines
-        const lines = buffer.split('\n\n');
-        buffer = lines.pop() || ''; // Keep the incomplete part in buffer
-        
-        for (const line of lines) {
-          // Skip empty lines and keep-alive messages
-          if (!line.trim() || line.includes(':keep-alive')) continue;
-          
-          // Process data lines
-          if (line.startsWith('data:')) {
-            const content = line.substring(5).trim();
-            
-            // Check for [DONE] marker
-            if (content === '[DONE]') continue;
-            
-            try {
-              // Try to parse as JSON
-              const jsonData = JSON.parse(content);
-              
-              // Handle error responses
-              if (jsonData.error) {
-                throw new Error(jsonData.message || 'Unknown error in stream');
-              }
-              
-              // Extract content from DeepSeek API response format
-              if (jsonData.choices && jsonData.choices[0].delta && jsonData.choices[0].delta.content) {
-                const textChunk = jsonData.choices[0].delta.content;
-                reportContent += textChunk;
-              }
-            } catch (e) {
-              // If not valid JSON, treat as plain text content
-              if (content && content !== '[DONE]') {
-                reportContent += content;
-              }
-            }
-            
-            // Update UI with current content
-            setAgentReport(reportContent);
-            
-            // Force a UI refresh to prevent UI blocking
-            await new Promise(resolve => setTimeout(resolve, 0));
-          }
-        }
-      }
-      
-      addLog(`✅ Agent analysis complete - generated report`, 'success');
-      
-    } catch (error) {
-      console.error('Error processing stream:', error);
-      throw error;
     }
   };
 
@@ -371,7 +352,7 @@ export default function SearchInterface() {
                 ref={inputRef}
                 value={query}
                 onChange={handleInputChange}
-                placeholder="e.g. Which Farcaster frames / mini apps devs should Balaji reach out to for Network School...?"
+                placeholder="e.g. Find Frame developers building on Base..."
                 disabled={isSearching || isAgentProcessing}
                 className={`w-full ${inputBgWithOpacity} border ${borderColor} rounded p-4 ${textColor} focus:outline-none focus:border-[#0057ff] ${placeholderColor} font-mono text-sm resize-none overflow-hidden min-h-[60px]`}
                 rows={1}
