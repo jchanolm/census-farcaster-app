@@ -45,9 +45,10 @@ export async function POST(request: Request) {
     // Neo4j fulltext search query for casts
     const castsSearchQuery = `
     CALL db.index.fulltext.queryNodes('casts', $query) YIELD node, score 
+    WHERE score > .8
     MATCH (node)
     ORDER BY score DESC 
-    LIMIT 300
+    LIMIT 150
     MATCH (user:Account)-[r:POSTED]-(node)
     WITH user, 
          avg(score) as avgMentionQuality, 
@@ -66,6 +67,8 @@ export async function POST(request: Request) {
     const accountsSearchQuery = `
     CALL db.index.fulltext.queryNodes('wcAccounts', $query) YIELD node, score
     WHERE score > 0.8
+    ORDER BY score DESC 
+    LIMIT 10
     RETURN 
       node.username as username,
       node.bio as bio,
@@ -73,8 +76,6 @@ export async function POST(request: Request) {
       score as avgMentionQuality,
       [] as castText,
       'account_match' as matchType
-    ORDER BY score DESC
-    LIMIT 15
     `;
     
     // Execute the queries
