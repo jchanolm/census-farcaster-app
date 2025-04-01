@@ -79,7 +79,7 @@ export async function POST(request: Request) {
     CALL db.index.fulltext.queryNodes('wcAccounts', $cleanQuery) YIELD node, score
     WHERE score > 5
     ORDER BY score DESC 
-    LIMIT 5
+    LIMIT 2
     RETURN 
       node.username as username,
       node.bio as bio,
