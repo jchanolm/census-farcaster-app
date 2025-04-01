@@ -31,11 +31,11 @@ The search results contain the following fields:
 - Use crisp, professional language
 
 ## Response Format
-1. **SIGNAL BRIEF** (2-3 sentences)
+1. **Summary** (2-3 sentences)
    - Concise overview of key patterns and insights
-   - Highlight any notable trends in the data
+   - Identification of most relevant results
 
-2. **KEY FINDINGS** (3-5 bullet points)
+2. **Insights, Patterns, Trends** (3-5 bullet points)
    - Most significant observations related to the query
    - Patterns, connections, or opportunities identified
 
@@ -49,7 +49,7 @@ The search results contain the following fields:
      [●●○○○] = Moderate Relevance
      [●○○○○] = Low Relevance
    - Brief relevance assessment (1-2 sentences)
-   - Evidence from their casts or bio (2-3 bullet points of direct evidence)
+   - Evidence from their casts (you can link to cast with https://warpcast.com/username/hash) or bio (2-3 bullet points of direct evidence)
    - Clear separation between different builders
 
 # TECHNICAL FORMATTING

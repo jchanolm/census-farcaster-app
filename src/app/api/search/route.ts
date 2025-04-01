@@ -21,9 +21,8 @@ export async function POST(request: Request) {
     ORDER BY score DESC 
     LIMIT 300
     MATCH (user:RealAssNigga:Account)-[r:POSTED]-(node)
-    WITH user, avg(score) as totalScore, collect(distinct(node.text)) as castText
-    return distinct user.username as username, user.bio as bio, user.fcRewardsEarned as fcRewardsEarned,
-    user.fcCredScore as fcCredScore, user.twitter as twitter, user.github as github, user.dune as dune,
+    WITH user, avg(score) as totalScore, collect(distinct(node.text) + " | " + node.hash) as castText
+    return distinct user.username as username, user.bio as bio, user.pfpUrl as pfpUrl, ,
     castText, totalScore order by totalScore desc\    `;
     
     const records = await runQuery(basicQuery, { query: query });
