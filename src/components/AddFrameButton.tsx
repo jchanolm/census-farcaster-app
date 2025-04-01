@@ -13,16 +13,17 @@ export default function AddFrameButton() {
       setIsAdding(true);
       setError(null);
       
-      const result = await sdk.actions.addFrame();
+      // Call the addFrame method
+      await sdk.actions.addFrame();
       
-      if (result.added) {
-        setAdded(true);
-        console.log('Frame added successfully', result.notificationDetails);
-      } else {
-        setError(`Failed to add frame: ${result.reason}`);
-      }
+      // If we get here, the frame was added successfully
+      setAdded(true);
+      console.log('Frame added successfully');
+      
     } catch (err) {
+      // Handle any errors
       setError(`Error: ${err instanceof Error ? err.message : String(err)}`);
+      console.error('Error adding frame:', err);
     } finally {
       setIsAdding(false);
     }
