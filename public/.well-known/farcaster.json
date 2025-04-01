@@ -13,6 +13,6 @@
       "buttonTitle": "Explore Onchain Builders",
       "splashImageUrl": "https://frame.usequotient.xyz/icon.png",
       "splashBackgroundColor": "#000000",
-      "webhookUrl": "https://frame.usequotient.xyz/api/webhook"
+      "webhookUrl": ""
     }
   }
