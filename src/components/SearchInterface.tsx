@@ -310,8 +310,8 @@ export default function SearchInterface() {
   return (
     <div className={`w-full min-h-screen ${darkMode ? 'bg-black' : 'bg-[#e5e5e8]'} ${textColor} relative flex flex-col items-center`}>
       {/* Header with theme toggle and Add Frame button */}
-      <header className="w-full py-4 px-6 flex justify-between items-center">
-        <AddFrameButton />
+      <header className="w-full py-4 px-6 flex justify-end items-center">
+       <AddFrameButton />
         
         {/* Theme toggle button */}
         <button
