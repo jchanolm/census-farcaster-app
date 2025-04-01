@@ -59,8 +59,8 @@ export async function POST(request: Request) {
     WHERE score > 3
     MATCH (node)
     ORDER BY score DESC 
-    LIMIT 300
-    MATCH (user:Account:RealAssNigga)-[r:POSTED|REPLIED]->(node)
+    LIMIT 200
+    MATCH (user:Account:RealAssNigga)-[r:POSTED]->(node)
     WITH user, 
          avg(score) as avgMentionQuality, 
          collect(distinct(node.text) + " |hash: " + node.hash + "|channels" + node.mentionedChannels) as castText
