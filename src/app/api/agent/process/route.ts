@@ -17,9 +17,9 @@ The data contains profiles from the Farcaster network, including usernames, bios
 The search results contain the following fields:
 - username: The Farcaster handle of the user
 - bio: User's profile description
-- castText: Array of the user's recent posts
+- castText: Casts related to the query
 - pfp: Profile picture URL (if available)
-- totalScore: Relevance score (higher is more relevant)
+- totalScore: Average relevance score for casts associated with the user  
 
 # RESPONSE GUIDELINES
 ## Understanding User Intent
@@ -29,6 +29,7 @@ The search results contain the following fields:
 
 ## Tone & Style
 - Write like an intelligence analyst: clear, direct, unpretentious
+- Use full sentences. 
 - Use active voice and strong, specific nouns/verbs
 - Be concise - every word should have a purpose
 - Avoid generic observations, truisms, and obvious statements
@@ -92,8 +93,19 @@ export async function POST(request: Request) {
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
+        let keepAliveInterval: NodeJS.Timeout | null = null;
+        
         try {
           console.log('🤖 Agent API: Starting LLM streaming...');
+          
+          // Set up a keepalive interval to prevent connection timeouts
+          keepAliveInterval = setInterval(() => {
+            try {
+              controller.enqueue(encoder.encode("data: :keep-alive\n\n"));
+            } catch (e) {
+              if (keepAliveInterval) clearInterval(keepAliveInterval);
+            }
+          }, 15000); // Send keepalive every 15 seconds
           
           // Call the Deepseek API with streaming enabled
           const response = await fetch(process.env.DEEPSEEK_API_ENDPOINT || 'https://api.deepseek.com/v1/chat/completions', {
@@ -116,12 +128,14 @@ export async function POST(request: Request) {
               ],
               temperature: 0.1,
               stream: true,
-              max_tokens: 8192
+              max_tokens: 6000
             })
           });
           
           if (!response.ok) {
-            throw new Error(`Model API error: ${response.status}`);
+            const errorText = await response.text();
+            console.error(`Model API error (${response.status}):`, errorText);
+            throw new Error(`DeepSeek API error: ${response.status} - ${errorText}`);
           }
           
           // Stream the response
@@ -130,18 +144,55 @@ export async function POST(request: Request) {
             throw new Error('No stream available from API response');
           }
           
+          let buffer = '';
+          const decoder = new TextDecoder();
+          
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
-            controller.enqueue(value);
+            
+            // Decode and process the chunk
+            const chunk = decoder.decode(value, { stream: true });
+            buffer += chunk;
+            
+            // Process complete SSE messages
+            const lines = buffer.split('\n\n');
+            buffer = lines.pop() || ''; // Keep the last potentially incomplete chunk
+            
+            for (const line of lines) {
+              if (!line.trim() || line.includes('[DONE]')) continue;
+              
+              // Forward the chunk to the client
+              controller.enqueue(encoder.encode(line + '\n\n'));
+              
+              // Force flush the data
+              await new Promise(resolve => setTimeout(resolve, 0));
+            }
+          }
+          
+          // Send [DONE] marker
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          
+          if (keepAliveInterval) {
+            clearInterval(keepAliveInterval);
+            keepAliveInterval = null;
           }
           
           controller.close();
+          console.log('✅ Agent API: Stream completed successfully');
           
         } catch (error) {
           console.error('❌ Agent API streaming error:', error);
           const errorMessage = error instanceof Error ? error.message : String(error);
-          controller.enqueue(encoder.encode(`Error: ${errorMessage}`));
+          
+          // Send error message to client
+          controller.enqueue(encoder.encode(`data: {"error":true,"message":"${errorMessage}"}\n\n`));
+          
+          if (keepAliveInterval) {
+            clearInterval(keepAliveInterval);
+            keepAliveInterval = null;
+          }
+          
           controller.close();
         }
       }
@@ -151,7 +202,7 @@ export async function POST(request: Request) {
     return new Response(stream, {
       headers: {
         'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
+        'Cache-Control': 'no-cache, no-transform',
         'Connection': 'keep-alive'
       }
     });
