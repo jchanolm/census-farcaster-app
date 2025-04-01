@@ -22,7 +22,7 @@ function sanitizeQuery(query: string): string {
 
 /**
  * Handles the search query for Farcaster network builders
- * @param request - 
+ * @param request - The incoming HTTP request
  * @returns JSON response with search results or error
  */
 export async function POST(request: Request) {
@@ -71,7 +71,12 @@ export async function POST(request: Request) {
     // Convert Neo4j records to plain objects
     const results = records.map(record => {
       const plainObj: Record<string, any> = {};
-      record.keys.forEach(key => {
+      
+      // Fix for the Symbol issue - convert record keys to strings
+      const keys = record.keys.map(key => String(key));
+      
+      // Now use the string keys
+      keys.forEach(key => {
         plainObj[key] = record.get(key);
       });
       
