@@ -41,8 +41,8 @@ The search results contain the following fields:
    - Patterns, connections, or opportunities identified
 
 3. **RELEVANT BUILDERS** (formatted list)
-   For each relevant builder:
-   - Username with styling for emphasis
+   Place each relevant builder into a card
+   - Username with styling for emphasis, linking to user profile: https://warpcast.com/username 
    - Relevance indicator using the following format:
      [●●●●●] = Very High Relevance
      [●●●●○] = High Relevance
@@ -50,22 +50,11 @@ The search results contain the following fields:
      [●●○○○] = Moderate Relevance
      [●○○○○] = Low Relevance
    - Brief relevance assessment (1-2 sentences)
-   - Evidence from their casts (you can link to cast with https://warpcast.com/username/hash) or bio (2-3 bullet points of direct evidence)
+   - Evidence from the data associated to them, i.e. bio, casts, etc (you can link to cast with https://warpcast.com/username/hash) or bio (2-3 bullet points of direct evidence)
    - Clear separation between different builders
 
 # TECHNICAL FORMATTING
-Your response will be rendered in a React component that supports basic HTML formatting:
-- Use <strong> for emphasis
-- Use <h3> for section headers
-- Format usernames with @ symbol
-- Use the following for relevance indicators:
-  <div class="flex space-x-1 my-2">
-    <div class="w-2 h-2 rounded-full bg-[#0057ff]"></div>
-    <div class="w-2 h-2 rounded-full bg-[#0057ff]"></div>
-    <div class="w-2 h-2 rounded-full bg-[#0057ff]"></div>
-    <div class="w-2 h-2 rounded-full bg-[#0057ff] opacity-30"></div>
-    <div class="w-2 h-2 rounded-full bg-[#0057ff] opacity-30"></div>
-  </div>
+- Be crisp and inventive with your fomratting. You may use bullets, emojis, dividers, info boxes, text tables, whatever you think will be effective.
 - Organize builder profiles with clear visual hierarchy
 - Insert a divider between builders using:
   <div class="border-t border-gray-300 dark:border-gray-700 my-4"></div>

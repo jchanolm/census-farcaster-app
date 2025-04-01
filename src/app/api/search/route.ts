@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     LIMIT 300
     MATCH (user:RealAssNigga:Account)-[r:POSTED]-(node)
     WITH user, avg(score) as avgMentionQuality, sum(score) as totalMentions, collect(distinct(node.text) + " | " + node.hash) as castText
-    return distinct user.username as username, user.bio as bio, user.pfpUrl as pfpUrl
+    return distinct user.username as username, user.bio as bio, user.pfpUrl as pfpUrl, avgMentionQuality, totalMentions
     order by avgMentionQuality desc\    `;
     
     const records = await runQuery(basicQuery, { query: query });
