@@ -59,7 +59,7 @@ export async function POST(request: Request) {
     
     // Neo4j fulltext search query for casts
     const castsSearchQuery = `
-    CALL db.index.fulltext.queryNodes('casts', $query) YIELD node, score 
+    CALL db.index.fulltext.queryNodes('casts', $cleanQuery) YIELD node, score 
     WHERE score > 3
     MATCH (node)
     ORDER BY score DESC 
@@ -80,7 +80,7 @@ export async function POST(request: Request) {
     
     // Neo4j fulltext search query for wcAccounts
     const accountsSearchQuery = `
-    CALL db.index.fulltext.queryNodes('wcAccounts', $query) YIELD node, score
+    CALL db.index.fulltext.queryNodes('wcAccounts', $cleanQuery) YIELD node, score
     WHERE score > 3
     ORDER BY score DESC 
     LIMIT 10
