@@ -185,10 +185,6 @@ export default function SearchInterface() {
       // Log basic results
       if (data.results && data.results.length > 0) {
         addLog(`✅ Search complete - found ${data.results.length} results`, 'success');
-        
-        // Sample logging for first result
-        const firstResult = data.results[0];
-        addLog(`📝 First result: ${firstResult.username || 'Unknown'}`, 'info');
       } else {
         addLog(`✅ Search complete - found ${data.results?.length || 0} results`, 'success');
       }
@@ -220,25 +216,8 @@ export default function SearchInterface() {
             throw new Error(`Agent API error: ${agentResponse.status}`);
           }
           
-          // Process the streaming response - SIMPLIFIED APPROACH
-          const reader = agentResponse.body?.getReader();
-          const decoder = new TextDecoder();
-          
-          if (reader) {
-            let reportContent = '';
-            
-            while (true) {
-              const { done, value } = await reader.read();
-              if (done) break;
-              
-              // Simply decode and append the chunk to our report
-              const chunk = decoder.decode(value, { stream: true });
-              reportContent += chunk;
-              setAgentReport(reportContent);
-            }
-            
-            addLog(`✅ Agent analysis complete - generated report`, 'success');
-          }
+          // Process the streaming response - ENHANCED APPROACH
+          await processStreamResponse(agentResponse);
           
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -256,6 +235,81 @@ export default function SearchInterface() {
       addLog(`❌ Search error: ${errorMessage}`, 'error');
       console.error('Search error:', error);
       setIsSearching(false);
+    }
+  };
+
+  // Process streaming SSE response
+  const processStreamResponse = async (response: Response) => {
+    // Set up an event source to handle SSE
+    const reader = response.body?.getReader();
+    const decoder = new TextDecoder();
+    
+    if (!reader) {
+      throw new Error('Stream reader not available');
+    }
+    
+    let reportContent = '';
+    let buffer = '';
+    
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        // Decode the chunk
+        const chunk = decoder.decode(value, { stream: true });
+        buffer += chunk;
+        
+        // Split into SSE messages at double newlines
+        const lines = buffer.split('\n\n');
+        buffer = lines.pop() || ''; // Keep the incomplete part in buffer
+        
+        for (const line of lines) {
+          // Skip empty lines and keep-alive messages
+          if (!line.trim() || line.includes(':keep-alive')) continue;
+          
+          // Process data lines
+          if (line.startsWith('data:')) {
+            const content = line.substring(5).trim();
+            
+            // Check for [DONE] marker
+            if (content === '[DONE]') continue;
+            
+            try {
+              // Try to parse as JSON
+              const jsonData = JSON.parse(content);
+              
+              // Handle error responses
+              if (jsonData.error) {
+                throw new Error(jsonData.message || 'Unknown error in stream');
+              }
+              
+              // Extract content from DeepSeek API response format
+              if (jsonData.choices && jsonData.choices[0].delta && jsonData.choices[0].delta.content) {
+                const textChunk = jsonData.choices[0].delta.content;
+                reportContent += textChunk;
+              }
+            } catch (e) {
+              // If not valid JSON, treat as plain text content
+              if (content && content !== '[DONE]') {
+                reportContent += content;
+              }
+            }
+            
+            // Update UI with current content
+            setAgentReport(reportContent);
+            
+            // Force a UI refresh to prevent UI blocking
+            await new Promise(resolve => setTimeout(resolve, 0));
+          }
+        }
+      }
+      
+      addLog(`✅ Agent analysis complete - generated report`, 'success');
+      
+    } catch (error) {
+      console.error('Error processing stream:', error);
+      throw error;
     }
   };
 
