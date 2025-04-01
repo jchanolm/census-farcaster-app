@@ -103,7 +103,7 @@ export default function SearchInterface() {
   const [typewriterIndex, setTypewriterIndex] = useState(0);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [results, setResults] = useState<SearchResult[]>([]);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const logsEndRef = useRef<HTMLDivElement>(null);
 
   // Initialize the Farcaster SDK
@@ -156,6 +156,17 @@ export default function SearchInterface() {
   // Add a log entry
   const addLog = (message: string, type: 'info' | 'error' | 'success' | 'warning' = 'info') => {
     setLogs(prev => [...prev, { message, type, timestamp: new Date() }]);
+  };
+
+  // Handle input change and auto-resize
+  const handleInputChange = (e) => {
+    setQuery(e.target.value);
+    
+    // Auto-resize the input
+    if (inputRef.current) {
+      inputRef.current.style.height = 'auto';
+      inputRef.current.style.height = `${Math.min(inputRef.current.scrollHeight, 150)}px`;
+    }
   };
 
   const handleSearch = async (e: React.FormEvent) => {
@@ -336,23 +347,31 @@ export default function SearchInterface() {
           </div>
           
           <form onSubmit={handleSearch} className="mb-3">
-            <div className="relative">
-              <input
+            <div className="flex flex-col">
+              <textarea
                 ref={inputRef}
-                type="text"
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={handleInputChange}
                 placeholder="e.g. Find Frame developers building on Base..."
                 disabled={isSearching || isAgentProcessing}
-                className={`w-full ${inputBgWithOpacity} border ${borderColor} rounded p-4 ${textColor} focus:outline-none focus:border-[#0057ff] ${placeholderColor} font-mono text-sm`}
+                className={`w-full ${inputBgWithOpacity} border ${borderColor} rounded p-4 ${textColor} focus:outline-none focus:border-[#0057ff] ${placeholderColor} font-mono text-sm resize-none overflow-hidden min-h-[60px]`}
+                rows={1}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSearch(e);
+                  }
+                }}
               />
-              <button
-                type="submit"
-                disabled={isSearching || isAgentProcessing || !query.trim()}
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-[#0057ff] text-white px-4 py-2 rounded text-xs uppercase tracking-wider font-mono hover:bg-[#0046cc] transition-colors disabled:opacity-50 disabled:hover:bg-[#0057ff]"
-              >
-                Execute
-              </button>
+              <div className="flex justify-end mt-2">
+                <button
+                  type="submit"
+                  disabled={isSearching || isAgentProcessing || !query.trim()}
+                  className="bg-[#0057ff] text-white px-4 py-2 rounded text-xs uppercase tracking-wider font-mono hover:bg-[#0046cc] transition-colors disabled:opacity-50 disabled:hover:bg-[#0057ff]"
+                >
+                  Execute
+                </button>
+              </div>
             </div>
           </form>
           
