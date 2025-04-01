@@ -4,11 +4,6 @@ import { runQuery } from '@/lib/neo4j';
 // Enable dynamic rendering for this route
 export const dynamic = 'force-dynamic';
 
-/**
- * Sanitizes the input query to prevent Lucene parsing errors
- * @param query - The raw input query
- * @returns A cleaned and safe query string
- */
 function sanitizeQuery(query: string): { 
   originalQuery: string; 
   cleanQuery: string; 
@@ -35,6 +30,7 @@ function sanitizeQuery(query: string): {
     cleanQuery: sanitized.slice(0, 100) 
   };
 }
+
 /**
  * Handles the search query for Farcaster network builders
  * @param request - The incoming HTTP request
@@ -54,7 +50,7 @@ export async function POST(request: Request) {
     }
 
     // Sanitize the query
-    const cleanQuery = sanitizeQuery(query);
+    const { cleanQuery } = sanitizeQuery(query);
     console.log(`Processing sanitized query: ${cleanQuery}`);
     
     // Neo4j fulltext search query for casts
@@ -63,8 +59,8 @@ export async function POST(request: Request) {
     WHERE score > 3
     MATCH (node)
     ORDER BY score DESC 
-    LIMIT 150
-    MATCH (user:Account)-[r:POSTED]-(node)
+    LIMIT 200
+    MATCH (user:Account:RealAssNigga)-[r:POSTED]->(node)
     WITH user, 
          avg(score) as avgMentionQuality, 
          collect(distinct(node.text) + " |hash: " + node.hash + "|channels" + node.mentionedChannels) as castText
@@ -95,11 +91,11 @@ export async function POST(request: Request) {
     
     // Execute the queries
     console.log('Running casts query...');
-    const castsRecords = await runQuery(castsSearchQuery, { query: cleanQuery });
+    const castsRecords = await runQuery(castsSearchQuery, { cleanQuery });
     console.log(`Casts query returned ${castsRecords.length} records`);
     
     console.log('Running accounts query...');
-    const accountsRecords = await runQuery(accountsSearchQuery, { query: cleanQuery });
+    const accountsRecords = await runQuery(accountsSearchQuery, { cleanQuery });
     console.log(`Accounts query returned ${accountsRecords.length} records`);
     
     // Process all records - putting account matches first
@@ -134,12 +130,13 @@ export async function POST(request: Request) {
   
     // Return results
     return NextResponse.json({ 
+      originalQuery: query,  // Add this line
       query: cleanQuery, 
       results,
       totalResults: results.length,
       castMatches: castsRecords.length,
       accountMatches: accountsRecords.length
-    });
+        });
     
   } catch (error) {
     // Comprehensive error logging and handling
