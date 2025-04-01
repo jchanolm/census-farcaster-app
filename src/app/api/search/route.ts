@@ -52,7 +52,7 @@ export async function POST(request: Request) {
     WITH user, 
          avg(score) as avgMentionQuality, 
          sum(score) as totalMentions, 
-         collect(distinct(node.text) + " | " + node.hash) as castText
+         collect(distinct(node.text) + " |hash: " + node.hash + "|channels" + node.mentionedChannels + "|castAuthorUsername"+ node.author) as castText
     RETURN DISTINCT 
       user.username as username, 
       user.bio as bio, 
