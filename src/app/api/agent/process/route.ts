@@ -116,11 +116,6 @@ These are individual posts by Farcaster users matching the search query.
    - Focus on unique information not already covered in Key Findings
    - For hiring/recruiting queries: Only include external candidates who are not already part of the organization
    
-3. **Strategic Implications** (when appropriate and relevant to user's request)
-   - Actionable takeaways
-   - Emerging opportunities
-   - Potential challenges or considerations
-
 # IMPORTANT
 - Ensure Key Findings and Notable Builders sections contain distinct information without redundancy
 - Focus exclusively on addressing the user's query with the provided data
