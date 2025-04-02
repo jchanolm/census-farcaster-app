@@ -9,12 +9,16 @@ export default function Home() {
 
   useEffect(() => {
     let mounted = true;
-    const timer = setTimeout(async () => {
+
+    // Initialize the app immediately
+    const initializeApp = async () => {
       if (mounted) {
         try {
           // Log the SDK context for debugging
           console.log('SDK Context:', sdk.context);
           
+          // Call ready to dismiss the splash screen when the app is ready to be displayed
+          // This should be called as soon as possible while avoiding content reflows
           await sdk.actions.ready();
           console.log('Farcaster SDK initialized');
         } catch (error) {
@@ -24,11 +28,13 @@ export default function Home() {
           setSdkReady(true);
         }
       }
-    }, 100);
+    };
+
+    // Start initialization immediately
+    initializeApp();
     
     return () => {
       mounted = false;
-      clearTimeout(timer);
     };
   }, []);
 

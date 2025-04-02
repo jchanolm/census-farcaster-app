@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   title: 'Quotient',
   description: '/',
   other: {
-    'fc:frame': '{"version":"next","imageUrl":"https://farcaster.usequotient.xyz/opengraph-image.png","aspectRatio":"3:2","button":{"title":"Explore","action":{"type":"launch_frame","name":"Explore","url":"https://farcaster.usequotient.xyz","splashImageUrl":"https://farcaster.usequotient.xyz/splash.png","splashBackgroundColor":"#000"}}}'
+    'fc:frame': '{"version":"next","imageUrl":"https://farcaster.usequotient.xyz/icon.png","aspectRatio":"3:2","button":{"title":"Explore","action":{"type":"launch_frame","name":"Explore","url":"https://farcaster.usequotient.xyz","splashImageUrl":"https://farcaster.usequotient.xyz/icon.png","splashBackgroundColor":"#000"}}}'
   }
 };
 

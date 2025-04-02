@@ -47,6 +47,7 @@ The search results contain the following fields:
 3. **Relevant Builders & Projects**
    - For builder-focused searches:
      - Username with styling for emphasis, linking to user profile: https://warpcast.com/username 
+     - You may extract + reference entities who you find in the text of casts/posts even if we don't have Account records for them.
      - Clear relevance assessment (WHY this person matters for the query)
      - Evidence from specific bio elements or cast content that demonstrates relevance
      - Link directly to their most pertinent casts: https://warpcast.com/username/hash
