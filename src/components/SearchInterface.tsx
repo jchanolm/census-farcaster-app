@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { sdk } from '@farcaster/frame-sdk';
 import AddFrameButton from '@/components/AddFrameButton';
+import SidekickBanner from '@/components/SidekickBanner';
 import ReactMarkdown from 'react-markdown';
 
 type LogEntry = {
@@ -331,8 +332,11 @@ export default function SearchInterface() {
         </button>
       </header>
       
+      {/* Add Sidekick Banner here */}
+      <SidekickBanner darkMode={darkMode} />
+      
       {/* Main search area */}
-      <main className="pt-8 px-6 md:px-14 w-full max-w-5xl mx-auto">
+      <main className="pt-2 px-6 md:px-14 w-full max-w-5xl mx-auto">
         <div className="mb-6 text-center">
           <h1 className="text-3xl md:text-4xl font-bold mb-2">Quotient</h1>
         </div>
