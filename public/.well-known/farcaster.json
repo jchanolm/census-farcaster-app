@@ -2,12 +2,17 @@
     "frame": {
       "name": "Quotient",
       "version": "1",
-      "iconUrl": "https://fc-search.usequotient.xyz/icon.png",
-      "homeUrl": "https://fc-search.usequotient.xyz",
-      "imageUrl": "https://fc-search.usequotient.xyz/opengraph-image.png",
+      "iconUrl": "https://farcaster.usequotient.xyz/icon.png",
+      "homeUrl": "https://farcaster.usequotient.xyz",
+      "imageUrl": "https://farcaster.usequotient.xyz/opengraph-image.png",
       "buttonTitle": "Explore",
-      "splashImageUrl": "https://fc-search.usequotient.xyz/icon.png",
+      "splashImageUrl": "https://farcaster.usequotient.xyz/icon.png",
       "splashBackgroundColor": "#000",
-      "webhookUrl": "https://fc-search.usequotient.xyz/api/webhook"
+      "webhookUrl": "https://farcaster.usequotient.xyz/api/webhook"
+    },
+    "accountAssociation": {
+      "header": "eyJmaWQiOjE5MDAwMCwidHlwZSI6ImN1c3RvZHkiLCJrZXkiOiIweDlCMDVlMTA5NGU3NjcwRTkxMTFkRjUzM0E0OGI3RDE1RDhFQTNBZjMifQ",
+      "payload": "eyJkb21haW4iOiJmYXJjYXN0ZXIudXNlcXVvdGllbnQueHl6In0",
+      "signature": "MHg2NTU4NjcyOWQ5ZGEyY2M4OTU5NjAwYTBiNjQ2ZGI1NmI4Y2NhMjJlZWE1YzEyMWI3OWNiMGM0MWYwNmE1YTdkNmJhYWIwNTk5Y2UyYWY5ZGIwNGNjYTBmNWRlNzVkYWI4ZjkzNTBkMTZkMTkyNWVjMWRiNjU4MjE1MDU5YjZiZDFi"
     }
   }
