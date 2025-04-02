@@ -55,7 +55,7 @@ export async function POST(request: Request) {
     
     // Neo4j fulltext search query for casts
     const castsSearchQuery = `
-CALL db.index.fulltext.queryNodes('casts', $cleanQuery) YIELD node, score WHERE score > 3 MATCH (node) ORDER BY score DESC LIMIT 250 MATCH (user:Account:RealAssNigga)-[r:POSTED]->(node) WITH user, avg(score) as avgMentionQuality, collect(distinct("this is a cast/post by user " + user.username +  "here is post/cast text: " + node.text + "end cast." + " timestamp" + node.timestamp + " likes: " + node.likesCount + "and it mentions channels:" + node.mentionedChannels)) as castText RETURN DISTINCT user.username as username, 
+CALL db.index.fulltext.queryNodes('casts', $cleanQuery) YIELD node, score WHERE score > 3 MATCH (node) ORDER BY score DESC LIMIT 250 MATCH (user:Account:RealAssNigga)-[r:POSTED]->(node) WITH user, max(score) + avg(score) as avgMentionQuality, collect(distinct("this is a cast/post by user " + user.username +  "here is post/cast text: " + node.text + "end cast." + " timestamp" + node.timestamp + " likes: " + node.likesCount + "and it mentions channels:" + node.mentionedChannels)) as castText RETURN DISTINCT user.username as username, 
 user.bio as bio, user.ogInteractionsCount as fcCredScore,  user.followerCount as followerCount, user.city as city, user.country as country, avgMentionQuality, castText, 'cast_match' as matchType ORDER BY avgMentionQuality DESC    `;
     
     // Neo4j fulltext search query for wcAccounts
