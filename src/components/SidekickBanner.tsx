@@ -17,7 +17,7 @@ export default function SidekickBanner({ darkMode = true }) {
       <div className="flex items-center">
         <div className="w-3 h-3 bg-[#0057ff] rounded-sm mr-2"></div>
         <span className="text-xs uppercase tracking-wider font-mono">
-          Support us on Sidekick
+          Support us on Sidequest
         </span>
       </div>
     </a>
