@@ -1,37 +1,8 @@
 import { NextResponse } from 'next/server';
 import { runQuery } from '@/lib/neo4j';
-import OpenAI from "openai";
 
 // Enable dynamic rendering for this route
 export const dynamic = 'force-dynamic';
-
-// Initialize OpenAI client for DeepInfra
-const openai = new OpenAI({
-  baseURL: 'https://api.deepinfra.com/v1/openai',
-  apiKey: process.env.DEEPINFRA_API_KEY,
-});
-
-// Function to generate embeddings using DeepInfra's BGE-M3 API
-async function generateQueryEmbedding(query: string): Promise<number[]> {
-  try {
-    const embedding = await openai.embeddings.create({
-      model: "BAAI/bge-m3",
-      input: query,
-      encoding_format: "float",
-    });
-    
-    if (!embedding.data || !embedding.data[0] || !embedding.data[0].embedding) {
-      console.error('Invalid embedding response:', embedding);
-      throw new Error('Failed to get valid embedding from API');
-    }
-    
-    console.log(`Generated embedding with ${embedding.usage.prompt_tokens} tokens`);
-    return embedding.data[0].embedding;
-  } catch (error) {
-    console.error('Error generating embedding:', error);
-    throw new Error('Failed to generate query embedding');
-  }
-}
 
 function sanitizeQuery(query: string): { 
   originalQuery: string; 
@@ -79,39 +50,35 @@ export async function POST(request: Request) {
     }
 
     // Sanitize the query
-    const { cleanQuery } = sanitizeQuery(query);
+    const { cleanQuery, originalQuery } = sanitizeQuery(query);
     console.log(`Processing sanitized query: ${cleanQuery}`);
     
-    // Generate embedding for the query
-    console.log('Generating embedding for query...');
-    const queryEmbedding = await generateQueryEmbedding(cleanQuery);
-    console.log('Embedding generated successfully');
-    
-    // Vector search query for casts - replacing the fulltext search
-    const vectorCastsQuery = `
-    CALL db.index.vector.queryNodes('generalEmbeddings', 300, $queryEmbedding)
-    YIELD node as cast, score
-    WHERE (cast:Cast) AND score > 0.7
-    MATCH (user:Account)-[r:POSTED]->(cast)
-    WITH user, cast, score, collect(distinct("this is a cast/post by user " + user.username + 
-        "here is post/cast text: " + cast.text + "end cast." + " timestamp" + 
-        cast.timestamp + " likes: " + cast.likesCount + "and it mentions channels:" + 
-        cast.mentionedChannels)) as castText
-    RETURN DISTINCT 
-        user.username as username,
-        user.bio as bio,
-        user.ogInteractionsCount as fcCredScore,
-        user.followerCount as followerCount,
-        user.city as city,
-        user.country as country,
-        score as avgMentionQuality,
-        castText,
-        'cast_match' as matchType
-    ORDER BY score DESC
+    // Neo4j fulltext search query for casts - UPDATED to simplify cast text format
+    const castsSearchQuery = `
+CALL db.index.fulltext.queryNodes('casts', $cleanQuery) YIELD node, score 
+WHERE score > 3 
+MATCH (user:Account:RealAssNigga)-[r:POSTED]->(node) 
+WITH user, node, score
+WHERE node.text IS NOT NULL
+ORDER BY score DESC 
+LIMIT 300
+RETURN DISTINCT 
+  user.username as username, 
+  user.bio as bio, 
+  user.ogInteractionsCount as fcCredScore,  
+  user.followerCount as followerCount, 
+  user.city as city, 
+  user.country as country, 
+  score as relevanceScore,
+  node.text as castContent,
+  node.timestamp as timestamp,
+  node.likesCount as likesCount,
+  node.mentionedChannels as mentionedChannels,
+  'cast_match' as matchType
+ORDER BY relevanceScore DESC
     `;
     
-    // Keep the existing accounts search query for now
-    // This could also be converted to vector search if needed
+    // Neo4j fulltext search query for wcAccounts
     const accountsSearchQuery = `
     CALL db.index.fulltext.queryNodes('wcAccounts', $cleanQuery) YIELD node, score
     WHERE score > 100
@@ -126,58 +93,60 @@ export async function POST(request: Request) {
       node.city as city,
       node.country as country,
       node.pfpUrl as pfpUrl,
-      score as avgMentionQuality,
-      [] as castText,
+      score as relevanceScore,
+      [] as castContent,
       'account_match' as matchType
     `;
     
     // Execute the queries
-    console.log('Running vector casts query...');
-    const castsRecords = await runQuery(vectorCastsQuery, { queryEmbedding });
-    console.log(`Vector casts query returned ${castsRecords.length} records`);
+    console.log('Running casts query...');
+    const castsRecords = await runQuery(castsSearchQuery, { cleanQuery });
+    console.log(`Casts query returned ${castsRecords.length} records`);
     
     console.log('Running accounts query...');
     const accountsRecords = await runQuery(accountsSearchQuery, { cleanQuery });
     console.log(`Accounts query returned ${accountsRecords.length} records`);
     
-    // Process all records - putting account matches first
-    const allRecords = [...accountsRecords, ...castsRecords];
-    
-    // Convert Neo4j records to plain objects
-    const results = allRecords.map(record => {
+    // Process accounts and casts separately
+    const accountResults = accountsRecords.map(record => {
       const plainObj: Record<string, any> = {};
-      
-      // Fix for the Symbol issue - convert record keys to strings
       const keys = record.keys.map(key => String(key));
-      
-      // Now use the string keys
       keys.forEach(key => {
         plainObj[key] = record.get(key);
       });
-      
-      // For cast_match records, calculate totalScore
-      if (plainObj.matchType === 'cast_match') {
-        // Calculate a total score for sorting/ranking
-        plainObj.totalScore = plainObj.avgMentionQuality * 10; // Weight factor
-      } else {
-        // For account_match, use avgMentionQuality as totalScore
-        plainObj.totalScore = plainObj.avgMentionQuality * 15; // Higher weight for direct matches
-      }
-      
+      plainObj.totalScore = plainObj.relevanceScore * 15;
       return plainObj;
     });
     
-    // Sort by totalScore
-    results.sort((a, b) => b.totalScore - a.totalScore);
+    const castResults = castsRecords.map(record => {
+      const plainObj: Record<string, any> = {};
+      const keys = record.keys.map(key => String(key));
+      keys.forEach(key => {
+        plainObj[key] = record.get(key);
+      });
+      plainObj.totalScore = plainObj.relevanceScore * 10;
+      return plainObj;
+    });
+    
+    // Organize results into a structured format for the agent
+    const results = {
+      accounts: accountResults,
+      casts: castResults,
+      stats: {
+        totalResults: accountResults.length + castResults.length,
+        accountMatches: accountResults.length,
+        castMatches: castResults.length
+      }
+    };
   
     // Return results
     return NextResponse.json({ 
-      originalQuery: query,
+      originalQuery: originalQuery,
       query: cleanQuery, 
       results,
-      totalResults: results.length,
-      castMatches: castsRecords.length,
-      accountMatches: accountsRecords.length
+      totalResults: accountResults.length + castResults.length,
+      castMatches: castResults.length,
+      accountMatches: accountResults.length
     });
     
   } catch (error) {

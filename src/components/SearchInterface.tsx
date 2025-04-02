@@ -236,34 +236,49 @@ export default function SearchInterface() {
       
       const data = await response.json();
       
-      // Log basic results
-      if (data.results && data.results.length > 0) {
-        addLog(`Search complete - found ${data.results.length} results`, 'success');
+      // Log basic results (updated for structured format)
+      const accountsCount = data.results?.accounts?.length || 0;
+      const castsCount = data.results?.casts?.length || 0;
+      
+      if (accountsCount > 0 || castsCount > 0) {
+        addLog(`Search complete - found ${accountsCount} accounts and ${castsCount} casts`, 'success');
         
-        // Sample logging for first result
-        const firstResult = data.results[0];
-        addLog(`First result: ${firstResult.username || 'Unknown'}`, 'info');
+        // Sample logging for first account result if available
+        if (accountsCount > 0) {
+          const firstAccount = data.results.accounts[0];
+          addLog(`Top account match: ${firstAccount.username || 'Unknown'}`, 'info');
+        }
+        
+        // Sample logging for first cast result if available
+        if (castsCount > 0) {
+          const firstCast = data.results.casts[0];
+          addLog(`Top cast match: from ${firstCast.username || 'Unknown'}`, 'info');
+        }
       } else {
-        addLog(`Search complete - found ${data.results?.length || 0} results`, 'success');
+        addLog(`Search complete - no matching accounts or casts found`, 'warning');
       }
       
-      setResults(data.results || []);
+      setResults(data.results || { accounts: [], casts: [] });
       setIsSearching(false);
       setIsCompleted(true);
       
-      // Process with agent if we have results
-      if (data.results && data.results.length > 0) {
+      // Process with agent if we have any results
+      if (accountsCount > 0 || castsCount > 0) {
         setIsAgentProcessing(true);
-        addLog(`Starting agent analysis of ${data.results.length} results...`, 'info');
+        addLog(`Starting agent analysis of ${accountsCount} accounts and ${castsCount} casts...`, 'info');
         
         try {
-          // Call the agent API directly to get the streaming response
+          // Call the agent API with the structured format
           const agentResponse = await fetch('/api/agent/process', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ query, results: data.results }),
+            body: JSON.stringify({ 
+              originalQuery: query, 
+              query: data.query,
+              results: data.results 
+            }),
           });
           
           if (!agentResponse.ok) {
@@ -291,6 +306,7 @@ export default function SearchInterface() {
                   try {
                     const content = line.substring(5).trim();
                     if (content === '[DONE]') continue;
+                    if (content === ':keep-alive') continue;
                     
                     const jsonData = JSON.parse(content);
                     if (jsonData.choices && jsonData.choices[0].delta && jsonData.choices[0].delta.content) {
@@ -335,6 +351,7 @@ export default function SearchInterface() {
     }
   };
 
+  
   // Toggle dark/light mode
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
@@ -457,7 +474,7 @@ export default function SearchInterface() {
           
           {/* Integrated logs section - in dropdown */}
           {logs.length > 0 && showLogs && (
-            <div className={`mt-3 ${darkMode ? 'bg-[#1a2030]' : 'bg-gray-50'} rounded-md p-3 max-h-32 overflow-y-auto scrollbar-hide font-mono text-xs`}>
+            <div className={`mt-3 ${darkMode ? 'bg-[#1a2030]' : 'bg-gray-50'} rounded-md p-3 max-h-32 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent font-mono text-xs`}>
               {logs.map((log, index) => {
                 let logColor;
                 let logIcon;
