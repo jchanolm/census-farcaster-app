@@ -4,6 +4,10 @@ import { useState, useRef, useEffect } from 'react';
 import { sdk } from '@farcaster/frame-sdk';
 import AddFrameButton from '@/components/AddFrameButton';
 import SidekickBanner from '@/components/SidekickBanner';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { atomDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 import ReactMarkdown from 'react-markdown';
 
 type LogEntry = {
@@ -24,21 +28,21 @@ type SearchResult = {
 function AgentReport({ report, darkMode, isLoading }) {
   if (isLoading) {
     return (
-      <div className={`${darkMode ? 'bg-black bg-opacity-80' : 'bg-[#f2f2f5] bg-opacity-90'} rounded-lg border ${darkMode ? 'border-gray-700' : 'border-gray-300'} p-5 backdrop-blur-sm mb-6 w-full`}>
+      <div className={`${darkMode ? 'bg-[#121620]' : 'bg-white'} rounded-lg border ${darkMode ? 'border-[#2a3343]' : 'border-gray-200'} p-5 shadow-sm mb-6 w-full`}>
         <div className="flex items-center mb-3">
-          <div className="w-4 h-4 mr-2 rounded-full bg-[#0057ff] opacity-80 animate-pulse"></div>
-          <div className={`text-xs uppercase tracking-wider ${darkMode ? 'text-[#aaa]' : 'text-[#777]'} font-semibold font-mono`}>
+          <div className="w-4 h-4 mr-2 rounded-full bg-blue-500 animate-pulse"></div>
+          <div className={`text-xs uppercase tracking-wider ${darkMode ? 'text-gray-300' : 'text-gray-600'} font-semibold font-mono`}>
             ANALYSIS
           </div>
         </div>
         
         <div className="my-6 flex flex-col items-center py-4">
           <div className="flex space-x-2 justify-center mb-3">
-            <div className="w-2 h-2 rounded-full bg-[#0057ff] opacity-60 animate-pulse"></div>
-            <div className="w-2 h-2 rounded-full bg-[#0057ff] opacity-60 animate-pulse delay-100"></div>
-            <div className="w-2 h-2 rounded-full bg-[#0057ff] opacity-60 animate-pulse delay-200"></div>
+            <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
+            <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse delay-100"></div>
+            <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse delay-200"></div>
           </div>
-          <p className={`text-sm ${darkMode ? 'text-[#aaa]' : 'text-[#777]'}`}>
+          <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
             Generating report...
           </p>
         </div>
@@ -49,13 +53,13 @@ function AgentReport({ report, darkMode, isLoading }) {
   if (!report) return null;
   
   // Use higher contrast text colors based on dark mode
-  const headerColor = darkMode ? 'text-[#88b3ff]' : 'text-[#0046cc]'; // Lighter blue for dark mode, darker blue for light mode
-  const accentColor = darkMode ? 'text-white' : 'text-[#0046cc]'; // White text for dark mode, dark blue for light mode
+  const headerColor = darkMode ? 'text-blue-300' : 'text-blue-700';
+  const accentColor = darkMode ? 'text-blue-200' : 'text-blue-700';
   
   // Custom renderer for React Markdown components
   const components = {
     // Headings
-    h1: ({node, ...props}) => <h1 className={`${headerColor} font-mono text-lg uppercase tracking-wider font-medium my-3`} {...props} />,
+    h1: ({node, ...props}) => <h1 className={`${headerColor} font-mono text-lg uppercase tracking-wider font-medium my-4`} {...props} />,
     h2: ({node, ...props}) => <h2 className={`${headerColor} font-mono text-md uppercase tracking-wider font-medium my-3`} {...props} />,
     h3: ({node, ...props}) => <h3 className={`${headerColor} font-mono text-sm uppercase tracking-wider font-medium my-3`} {...props} />,
     
@@ -63,45 +67,74 @@ function AgentReport({ report, darkMode, isLoading }) {
     a: ({node, ...props}) => {
       // Check if this is a username mention
       if (props.href?.startsWith('https://warpcast.com/')) {
-        return <a className={`${accentColor} font-mono hover:underline`} target="_blank" {...props} />;
+        return <a className={`${accentColor} font-mono hover:underline`} target="_blank" rel="noopener noreferrer" {...props} />;
       }
-      return <a className={`${accentColor} hover:underline`} target="_blank" {...props} />;
+      return <a className={`${accentColor} hover:underline`} target="_blank" rel="noopener noreferrer" {...props} />;
     },
     
     // Lists with custom styling
     li: ({node, ...props}) => {
       return (
         <li className="flex items-start mb-2">
-          <span className={`inline-flex items-center justify-center w-5 h-5 rounded-full ${darkMode ? 'bg-[#88b3ff] bg-opacity-20 text-[#88b3ff]' : 'bg-[#0046cc] bg-opacity-10 text-[#0046cc]'} text-xs font-medium mr-3 flex-shrink-0`}>•</span>
+          <span className={`inline-flex items-center justify-center w-5 h-5 rounded-full ${darkMode ? 'bg-blue-900 bg-opacity-40 text-blue-300' : 'bg-blue-100 text-blue-700'} text-xs font-medium mr-3 flex-shrink-0`}>•</span>
           <span>{props.children}</span>
         </li>
       );
     },
     
     // Add horizontal rule styling
-    hr: ({node, ...props}) => <hr className="my-4 border-t border-gray-700" {...props} />,
+    hr: ({node, ...props}) => <hr className={`my-4 border-t ${darkMode ? 'border-gray-700' : 'border-gray-300'}`} {...props} />,
     
     // Custom paragraphs
-    p: ({node, ...props}) => <p className="mb-3" {...props} />,
+    p: ({node, ...props}) => <p className="mb-3 leading-relaxed" {...props} />,
     
     // Bold text
-    strong: ({node, ...props}) => <strong className={`${accentColor} font-semibold`} {...props} />
+    strong: ({node, ...props}) => <strong className={`${accentColor} font-semibold`} {...props} />,
+    
+    // Code blocks with syntax highlighting
+    code: ({node, inline, className, children, ...props}) => {
+      const match = /language-(\w+)/.exec(className || '');
+      return !inline && match ? (
+        <SyntaxHighlighter
+          style={atomDark}
+          language={match[1]}
+          PreTag="div"
+          className="rounded-md my-3"
+          {...props}
+        >
+          {String(children).replace(/\n$/, '')}
+        </SyntaxHighlighter>
+      ) : (
+        <code className={`${darkMode ? 'bg-gray-800 text-gray-200' : 'bg-gray-100 text-gray-800'} px-1 py-0.5 rounded text-sm`} {...props}>
+          {children}
+        </code>
+      );
+    },
+    
+    // Blockquotes
+    blockquote: ({node, ...props}) => (
+      <blockquote className={`border-l-4 ${darkMode ? 'border-gray-700 bg-gray-800 bg-opacity-50' : 'border-gray-300 bg-gray-100 bg-opacity-50'} pl-4 py-2 my-3 rounded-r`} {...props} />
+    ),
   };
   
   // Process username mentions before passing to ReactMarkdown
   const processedReport = report.replace(/@([a-zA-Z0-9_]+)/g, '[@$1](https://warpcast.com/$1)');
   
   return (
-    <div className={`${darkMode ? 'bg-black bg-opacity-80' : 'bg-[#f2f2f5] bg-opacity-90'} rounded-lg border ${darkMode ? 'border-gray-700' : 'border-gray-300'} p-5 backdrop-blur-sm mb-6 w-full`}>
+    <div className={`${darkMode ? 'bg-[#121620]' : 'bg-white'} rounded-lg border ${darkMode ? 'border-[#2a3343]' : 'border-gray-200'} p-5 shadow-sm mb-6 w-full`}>
       <div className="flex items-center mb-5">
-        <div className="w-4 h-4 mr-2 bg-[#0057ff] rounded-sm"></div>
-        <div className={`text-xs uppercase tracking-wider ${darkMode ? 'text-[#aaa]' : 'text-[#777]'} font-semibold font-mono`}>
+        <div className="w-4 h-4 mr-2 bg-blue-500 rounded-sm"></div>
+        <div className={`text-xs uppercase tracking-wider ${darkMode ? 'text-gray-300' : 'text-gray-600'} font-semibold font-mono`}>
           INTELLIGENCE REPORT
         </div>
       </div>
       
-      <div className={`text-sm ${darkMode ? 'text-white' : 'text-[#333]'} font-sans leading-relaxed`}>
-        <ReactMarkdown components={components}>
+      <div className={`text-sm ${darkMode ? 'text-gray-100' : 'text-gray-800'} font-sans leading-relaxed`}>
+        <ReactMarkdown 
+          components={components}
+          remarkPlugins={[remarkGfm]}
+          rehypePlugins={[rehypeRaw]}
+        >
           {processedReport}
         </ReactMarkdown>
       </div>
@@ -120,6 +153,7 @@ export default function SearchInterface() {
   const [typewriterIndex, setTypewriterIndex] = useState(0);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [results, setResults] = useState<SearchResult[]>([]);
+  const [showLogs, setShowLogs] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const logsEndRef = useRef<HTMLDivElement>(null);
 
@@ -158,6 +192,7 @@ export default function SearchInterface() {
   // Add a log entry
   const addLog = (message: string, type: 'info' | 'error' | 'success' | 'warning' = 'info') => {
     setLogs(prev => [...prev, { message, type, timestamp: new Date() }]);
+    setShowLogs(true);
   };
 
   // Handle input change and auto-resize
@@ -182,6 +217,7 @@ export default function SearchInterface() {
     setTypewriterIndex(0);
     setAgentReport('');
     setLogs([]);
+    setShowLogs(true);
     
     addLog(`Starting search for query: "${query.trim()}"`, 'info');
     
@@ -302,15 +338,16 @@ export default function SearchInterface() {
   };
 
   // Get dynamic background and text colors based on theme
-  const bgColorWithOpacity = darkMode ? 'bg-black bg-opacity-80' : 'bg-[#f2f2f5] bg-opacity-90';
-  const borderColor = darkMode ? 'border-gray-700' : 'border-gray-300';
-  const textColor = darkMode ? 'text-white' : 'text-[#333]';
-  const textMutedColor = darkMode ? 'text-[#aaa]' : 'text-[#777]';
-  const inputBgWithOpacity = darkMode ? 'bg-[#0a0a10] bg-opacity-70' : 'bg-white bg-opacity-80';
-  const placeholderColor = darkMode ? 'placeholder-[#666]' : 'placeholder-[#999]';
+  const bgColor = darkMode ? 'bg-[#0a1020]' : 'bg-[#f5f7fa]';
+  const cardBg = darkMode ? 'bg-[#121620]' : 'bg-white';
+  const borderColor = darkMode ? 'border-[#2a3343]' : 'border-gray-200';
+  const textColor = darkMode ? 'text-gray-100' : 'text-gray-800';
+  const textMutedColor = darkMode ? 'text-gray-400' : 'text-gray-500';
+  const inputBg = darkMode ? 'bg-[#1a2030]' : 'bg-white';
+  const placeholderColor = darkMode ? 'placeholder-gray-500' : 'placeholder-gray-400';
 
   return (
-    <div className={`w-full min-h-screen ${darkMode ? 'bg-black' : 'bg-[#e5e5e8]'} ${textColor} relative flex flex-col items-center`}>
+    <div className={`w-full min-h-screen ${bgColor} ${textColor} relative flex flex-col items-center`}>
       {/* Header with theme toggle and Add Frame button */}
       <header className="w-full py-4 px-6 flex justify-end items-center">
        <AddFrameButton />
@@ -318,14 +355,15 @@ export default function SearchInterface() {
         {/* Theme toggle button */}
         <button
           onClick={toggleDarkMode}
-          className={`p-2 rounded-full ${darkMode ? 'bg-gray-800' : 'bg-gray-200'} ml-2`}
+          className={`p-2 rounded-full ${darkMode ? 'bg-[#1a2030] hover:bg-[#2a3040]' : 'bg-gray-200 hover:bg-gray-300'} ml-2 transition-colors`}
+          aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
         >
           {darkMode ? (
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+            <svg className="w-5 h-5 text-gray-300" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
               <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" />
             </svg>
           ) : (
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+            <svg className="w-5 h-5 text-gray-700" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
               <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
             </svg>
           )}
@@ -339,10 +377,11 @@ export default function SearchInterface() {
       <main className="pt-2 px-6 md:px-14 w-full max-w-5xl mx-auto">
         <div className="mb-6 text-center">
           <h1 className="text-3xl md:text-4xl font-bold mb-2">Quotient</h1>
+          <p className={`text-sm ${textMutedColor} font-mono`}>Deep Research for Onchain Builders</p>
         </div>
         
         {/* Search box */}
-        <div className={`w-full max-w-3xl mx-auto ${bgColorWithOpacity} rounded-lg border ${borderColor} p-5 backdrop-blur-sm mb-6`}>
+        <div className={`w-full max-w-3xl mx-auto ${cardBg} rounded-lg border ${borderColor} p-5 shadow-sm mb-6`}>
           <div className="flex items-center mb-3">
             <svg className="w-4 h-4 mr-2 opacity-80" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="11" cy="11" r="8"></circle>
@@ -359,7 +398,7 @@ export default function SearchInterface() {
                 onChange={handleInputChange}
                 placeholder="e.g. Which Farcaster frames / mini apps devs should Balaji reach out to for Network School...?"
                 disabled={isSearching || isAgentProcessing}
-                className={`w-full ${inputBgWithOpacity} border ${borderColor} rounded p-4 ${textColor} focus:outline-none focus:border-[#0057ff] ${placeholderColor} font-mono text-sm resize-none overflow-hidden min-h-[60px]`}
+                className={`w-full ${inputBg} border ${borderColor} rounded p-4 ${textColor} focus:outline-none focus:ring-1 focus:ring-blue-500 ${placeholderColor} font-mono text-sm resize-none overflow-hidden min-h-[60px]`}
                 rows={1}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
@@ -372,7 +411,7 @@ export default function SearchInterface() {
                 <button
                   type="submit"
                   disabled={isSearching || isAgentProcessing || !query.trim()}
-                  className="bg-[#0057ff] text-white px-4 py-2 rounded text-xs uppercase tracking-wider font-mono hover:bg-[#0046cc] transition-colors disabled:opacity-50 disabled:hover:bg-[#0057ff]"
+                  className="bg-blue-600 text-white px-4 py-2 rounded text-xs uppercase tracking-wider font-mono hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
                 >
                   Execute
                 </button>
@@ -382,9 +421,9 @@ export default function SearchInterface() {
           
           {/* Typewriter effect - more subtle */}
           {isSearching && (
-            <div className="mt-3 mb-2 font-mono text-sm text-opacity-70 text-[#6b8eff] border-l-2 border-[#6b8eff] border-opacity-50 pl-3">
-              <span className="inline-block opacity-80">{typewriterText}</span>
-              <span className="inline-block w-1.5 h-3.5 bg-[#6b8eff] ml-0.5 animate-pulse opacity-60"></span>
+            <div className="mt-3 mb-2 font-mono text-sm text-blue-400 border-l-2 border-blue-500 pl-3">
+              <span className="inline-block">{typewriterText}</span>
+              <span className="inline-block w-1.5 h-3.5 bg-blue-500 ml-0.5 animate-pulse"></span>
             </div>
           )}
           
@@ -392,17 +431,17 @@ export default function SearchInterface() {
           <div className={`flex items-center mt-3 text-xs ${textMutedColor} font-mono`}>
             {isSearching ? (
               <>
-                <span className="w-2 h-2 bg-[#0057ff] rounded-full mr-2"></span>
+                <span className="w-2 h-2 bg-blue-500 rounded-full mr-2 animate-pulse"></span>
                 <span>Scanning builders...</span>
               </>
             ) : isAgentProcessing ? (
               <>
-                <span className="w-2 h-2 bg-[#9c27b0] rounded-full mr-2"></span>
+                <span className="w-2 h-2 bg-purple-500 rounded-full mr-2 animate-pulse"></span>
                 <span>Analyzing results with agent...</span>
               </>
             ) : isCompleted ? (
               <>
-                <span className="w-2 h-2 bg-[#27c93f] rounded-full mr-2"></span>
+                <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
                 <span>Query completed.</span>
               </>
             ) : (
@@ -412,31 +451,44 @@ export default function SearchInterface() {
               </>
             )}
           </div>
-        </div>
-        
-        {/* Logs section */}
-        {logs.length > 0 && (
-          <div className={`w-full mb-6 ${bgColorWithOpacity} rounded-lg border ${borderColor} p-4 backdrop-blur-sm`}>
-            <div className="flex items-center mb-2">
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span className="text-xs uppercase tracking-wider font-mono">System Logs</span>
-            </div>
-            <div className="bg-gray-900 text-gray-100 font-mono text-xs p-3 rounded h-48 overflow-y-auto">
-              {logs.map((log, index) => (
-                <div key={index} className="mb-1">
-                  <span className="opacity-70">[{log.timestamp.toLocaleTimeString()}]</span>{' '}
-                  {log.type === 'error' && <span className="text-red-400">ERROR: </span>}
-                  {log.type === 'warning' && <span className="text-yellow-400">WARNING: </span>}
-                  {log.type === 'success' && <span className="text-green-400">SUCCESS: </span>}
-                  {log.message}
-                </div>
-              ))}
+          
+          {/* Integrated logs section - in dropdown */}
+          {logs.length > 0 && showLogs && (
+            <div className={`mt-3 ${darkMode ? 'bg-[#1a2030]' : 'bg-gray-50'} rounded-md p-3 max-h-32 overflow-y-auto font-mono text-xs`}>
+              {logs.map((log, index) => {
+                let logColor;
+                let logIcon;
+                
+                switch(log.type) {
+                  case 'error':
+                    logColor = darkMode ? 'text-red-300' : 'text-red-600';
+                    logIcon = '✕';
+                    break;
+                  case 'warning':
+                    logColor = darkMode ? 'text-yellow-300' : 'text-yellow-600';
+                    logIcon = '⚠';
+                    break;
+                  case 'success':
+                    logColor = darkMode ? 'text-green-300' : 'text-green-600';
+                    logIcon = '✓';
+                    break;
+                  default:
+                    logColor = darkMode ? 'text-blue-300' : 'text-blue-600';
+                    logIcon = '•';
+                }
+                
+                return (
+                  <div key={index} className={`mb-1 flex items-start ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    <span className={`${logColor} mr-1`}>{logIcon}</span>
+                    <span className="opacity-60 mr-2">{log.timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'})}</span>
+                    <span className={log.type === 'error' ? logColor : ''}>{log.message}</span>
+                  </div>
+                );
+              })}
               <div ref={logsEndRef} />
             </div>
-          </div>
-        )}
+          )}
+        </div>
         
         {/* Agent Results */}
         {(isAgentProcessing || agentReport) && (
