@@ -351,7 +351,6 @@ export default function SearchInterface() {
     }
   };
 
-  
   // Toggle dark/light mode
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);

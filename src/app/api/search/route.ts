@@ -58,10 +58,9 @@ export async function POST(request: Request) {
 CALL db.index.fulltext.queryNodes('casts', $cleanQuery) YIELD node, score 
 WHERE score > 3 
 MATCH (user:Account:RealAssNigga)-[r:POSTED]->(node) 
-WITH user, node, score
-WHERE node.text IS NOT NULL
+WITH user, node, score 
 ORDER BY score DESC 
-LIMIT 300
+LIMIT 250
 RETURN DISTINCT 
   user.username as username, 
   user.bio as bio, 
@@ -81,7 +80,7 @@ ORDER BY relevanceScore DESC
     // Neo4j fulltext search query for wcAccounts
     const accountsSearchQuery = `
     CALL db.index.fulltext.queryNodes('wcAccounts', $cleanQuery) YIELD node, score
-    WHERE score > 100
+    WHERE score > 4
     ORDER BY score DESC 
     LIMIT 7
     RETURN 
