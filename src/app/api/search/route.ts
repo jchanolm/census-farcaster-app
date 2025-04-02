@@ -61,7 +61,7 @@ user.bio as bio, user.ogInteractionsCount as fcCredScore,  user.followerCount as
     // Neo4j fulltext search query for wcAccounts
     const accountsSearchQuery = `
     CALL db.index.fulltext.queryNodes('wcAccounts', $cleanQuery) YIELD node, score
-    WHERE score > 3
+    WHERE score > 100
     ORDER BY score DESC 
     LIMIT 7
     RETURN 
