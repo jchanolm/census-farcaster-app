@@ -473,7 +473,7 @@ export default function SearchInterface() {
           
           {/* Integrated logs section - in dropdown */}
           {logs.length > 0 && showLogs && (
-            <div className={`mt-3 ${darkMode ? 'bg-[#1a2030]' : 'bg-gray-50'} rounded-md p-3 max-h-32 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent font-mono text-xs`}>
+            <div className={`mt-3 ${darkMode ? 'bg-[#1a2030]' : 'bg-gray-50'} rounded-md p-3 max-h-32 overflow-y-auto font-mono text-xs`}>
               {logs.map((log, index) => {
                 let logColor;
                 let logIcon;
