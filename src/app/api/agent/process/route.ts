@@ -17,7 +17,7 @@ The data contains profiles from the Farcaster network, including usernames, bios
 The search results contain the following fields:
 - username: The Farcaster handle of the user
 - bio: User's profile description
-- castText: Casts (i.e. posts) with information about the user's relevance. Each cast has the author . Draw heavily on these casts.
+- castText: Casts with information about the user's relevance. Draw heavily on these casts.
 - pfp: Profile picture URL (if available)
 
 # RESPONSE GUIDELINES
@@ -28,7 +28,7 @@ The search results contain the following fields:
 
 ## Tone & Style
 - Write like an intelligence analyst: clear, direct, unpretentious
-- Use full sentences. 
+- Use full sentences
 - Use active voice and strong, specific nouns/verbs
 - Be concise - every word should have a purpose
 - Avoid generic observations, truisms, and obvious statements
@@ -37,17 +37,17 @@ The search results contain the following fields:
 - When quoting casts, be selective - choose only the most revealing excerpts
 
 ## Response Format
-1. **Summary** (2-3 sentences)
+1. **Summary**
    - Concise overview of key patterns directly relevant to the query
    - Highlight what's most notable/actionable for the user
    - Avoid generic statements that could apply to any query
 
-2. **Key Insights** (3-4 bullet points maximum)
+2. **Key Insights**
    - Specific observations that deliver unique value
    - Focus on unexpected connections, emerging patterns, or actionable intelligence
    - Each insight should provide a genuinely new perspective the user couldn't easily infer
 
-3. **RELEVANT BUILDERS & Casts** (formatted list)
+3. **Relevant Builders & Projects**
    - For builder-focused searches:
      - Username with styling for emphasis, linking to user profile: https://warpcast.com/username 
      - Clear relevance assessment (WHY this person matters for the query)
@@ -59,14 +59,14 @@ The search results contain the following fields:
      - Group related casts to show conversation threads or competing perspectives
      - Highlight timestamp patterns if timing is relevant (e.g., recent surge in discussion)
 
-# TECHNICAL FORMATTING
-- Use crisp, visually distinctive formatting
-- Create clear visual hierarchy with consistent styling
-- Use dividers, emoji indicators, and spacing strategically
-- For builder profiles, use a card-like visual structure
-- For trend analysis, consider using sections with clear headings
-
-Remember that your primary value is in synthesis and pattern recognition - delivering insights the user couldn't easily get by simply scanning the data themselves.
+# MARKDOWN FORMATTING GUIDELINES
+- Use headings (##, ###) for clear section organization
+- Use bold (**text**) for key names and important concepts
+- Use bullet points for insights and key points
+- Use horizontal rules (---) to separate major sections
+- Do NOT use emojis or icons
+- Maintain professional formatting throughout
+- Links should be formatted as [Username](https://warpcast.com/username)
 
 # DATA PAYLOAD
 ${JSON.stringify(results, null, 2)}
@@ -75,15 +75,15 @@ ${JSON.stringify(results, null, 2)}
 
 export async function POST(request: Request) {
   try {
-    console.log('🔍 Agent API: Request received');
+    console.log('Agent API: Request received');
     const { originalQuery, query, results } = await request.json();
     
     if (!query || !results || !Array.isArray(results)) {
-      console.log('❌ Agent API: Invalid input', { query, resultsProvided: !!results, isArray: Array.isArray(results) });
+      console.log('Agent API: Invalid input', { query, resultsProvided: !!results, isArray: Array.isArray(results) });
       return NextResponse.json({ error: 'Invalid input' }, { status: 400 });
     }
     
-    console.log(`📊 Agent API: Processing ${results.length} results for query: "${query}"`);
+    console.log(`Agent API: Processing ${results.length} results for query: "${query}"`);
     
     // Format the prompt for the model using the original or processed query
     const prompt = formatPrompt(originalQuery || query, results);
@@ -95,7 +95,7 @@ export async function POST(request: Request) {
         let keepAliveInterval: NodeJS.Timeout | null = null;
         
         try {
-          console.log('🤖 Agent API: Starting LLM streaming...');
+          console.log('Agent API: Starting LLM streaming...');
           
           // Set up a keepalive interval to prevent connection timeouts
           keepAliveInterval = setInterval(() => {
@@ -178,10 +178,10 @@ export async function POST(request: Request) {
           }
           
           controller.close();
-          console.log('✅ Agent API: Stream completed successfully');
+          console.log('Agent API: Stream completed successfully');
           
         } catch (error) {
-          console.error('❌ Agent API streaming error:', error);
+          console.error('Agent API streaming error:', error);
           const errorMessage = error instanceof Error ? error.message : String(error);
           
           // Send error message to client
@@ -207,7 +207,7 @@ export async function POST(request: Request) {
     });
     
   } catch (error) {
-    console.error('❌ Agent API: Processing error:', error);
+    console.error('Agent API: Processing error:', error);
     return NextResponse.json({ 
       error: 'Processing failed',
       detail: error instanceof Error ? error.message : 'Unknown error'

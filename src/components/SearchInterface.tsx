@@ -77,6 +77,9 @@ function AgentReport({ report, darkMode, isLoading }) {
       );
     },
     
+    // Add horizontal rule styling
+    hr: ({node, ...props}) => <hr className="my-4 border-t border-gray-700" {...props} />,
+    
     // Custom paragraphs
     p: ({node, ...props}) => <p className="mb-3" {...props} />,
     
@@ -90,9 +93,7 @@ function AgentReport({ report, darkMode, isLoading }) {
   return (
     <div className={`${darkMode ? 'bg-black bg-opacity-80' : 'bg-[#f2f2f5] bg-opacity-90'} rounded-lg border ${darkMode ? 'border-gray-700' : 'border-gray-300'} p-5 backdrop-blur-sm mb-6 w-full`}>
       <div className="flex items-center mb-5">
-        <svg className="w-4 h-4 mr-2 text-[#0057ff]" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-          <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd"></path>
-        </svg>
+        <div className="w-4 h-4 mr-2 bg-[#0057ff] rounded-sm"></div>
         <div className={`text-xs uppercase tracking-wider ${darkMode ? 'text-[#aaa]' : 'text-[#777]'} font-semibold font-mono`}>
           INTELLIGENCE REPORT
         </div>
@@ -181,11 +182,10 @@ export default function SearchInterface() {
     setAgentReport('');
     setLogs([]);
     
-    addLog(`🔍 Starting search for query: "${query.trim()}"`, 'info');
+    addLog(`Starting search for query: "${query.trim()}"`, 'info');
     
     try {
-      addLog('📡 Calling search API...', 'info');
-      
+      addLog('Calling search API...', 'info');
       const response = await fetch('/api/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -193,7 +193,7 @@ export default function SearchInterface() {
       });
       
       if (!response.ok) {
-        addLog(`❌ Search API error: ${response.status}`, 'error');
+        addLog(`Search API error: ${response.status}`, 'error');
         throw new Error(`Error: ${response.status}`);
       }
       
@@ -201,13 +201,13 @@ export default function SearchInterface() {
       
       // Log basic results
       if (data.results && data.results.length > 0) {
-        addLog(`✅ Search complete - found ${data.results.length} results`, 'success');
+        addLog(`Search complete - found ${data.results.length} results`, 'success');
         
         // Sample logging for first result
         const firstResult = data.results[0];
-        addLog(`📝 First result: ${firstResult.username || 'Unknown'}`, 'info');
+        addLog(`First result: ${firstResult.username || 'Unknown'}`, 'info');
       } else {
-        addLog(`✅ Search complete - found ${data.results?.length || 0} results`, 'success');
+        addLog(`Search complete - found ${data.results?.length || 0} results`, 'success');
       }
       
       setResults(data.results || []);
@@ -217,7 +217,7 @@ export default function SearchInterface() {
       // Process with agent if we have results
       if (data.results && data.results.length > 0) {
         setIsAgentProcessing(true);
-        addLog(`🧠 Starting agent analysis of ${data.results.length} results...`, 'info');
+        addLog(`Starting agent analysis of ${data.results.length} results...`, 'info');
         
         try {
           // Call the agent API directly to get the streaming response
@@ -273,23 +273,23 @@ export default function SearchInterface() {
               }
             }
             
-            addLog(`✅ Agent analysis complete - generated report`, 'success');
+            addLog(`Agent analysis complete - generated report`, 'success');
           }
           
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-          addLog(`❌ Agent processing error: ${errorMessage}`, 'error');
+          addLog(`Agent processing error: ${errorMessage}`, 'error');
           console.error('Agent processing error:', error);
         } finally {
           setIsAgentProcessing(false);
         }
       } else {
-        addLog('⚠️ No results to analyze', 'warning');
+        addLog('No results to analyze', 'warning');
       }
       
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      addLog(`❌ Search error: ${errorMessage}`, 'error');
+      addLog(`Search error: ${errorMessage}`, 'error');
       console.error('Search error:', error);
       setIsSearching(false);
     }
@@ -317,7 +317,7 @@ export default function SearchInterface() {
         {/* Theme toggle button */}
         <button
           onClick={toggleDarkMode}
-          className={`p-2 rounded-full ${darkMode ? 'bg-gray-800' : 'bg-gray-200'}`}
+          className={`p-2 rounded-full ${darkMode ? 'bg-gray-800' : 'bg-gray-200'} ml-2`}
         >
           {darkMode ? (
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
@@ -422,7 +422,11 @@ export default function SearchInterface() {
             <div className="bg-gray-900 text-gray-100 font-mono text-xs p-3 rounded h-48 overflow-y-auto">
               {logs.map((log, index) => (
                 <div key={index} className="mb-1">
-                  <span className="opacity-70">[{log.timestamp.toLocaleTimeString()}]</span> {log.message}
+                  <span className="opacity-70">[{log.timestamp.toLocaleTimeString()}]</span>{' '}
+                  {log.type === 'error' && <span className="text-red-400">ERROR: </span>}
+                  {log.type === 'warning' && <span className="text-yellow-400">WARNING: </span>}
+                  {log.type === 'success' && <span className="text-green-400">SUCCESS: </span>}
+                  {log.message}
                 </div>
               ))}
               <div ref={logsEndRef} />
