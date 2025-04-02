@@ -15,7 +15,8 @@ function formatPrompt(query: string, results: any) {
     timestamp: cast.timestamp || '',
     mentionedChannels: cast.mentionedChannels || [],
     mentionedUsers: cast.mentionedUsers || [],
-    relevanceScore: cast.relevanceScore || 0
+    relevanceScore: cast.relevanceScore || 0,
+    isVectorMatch: cast.isVectorMatch || false
   }));
   
   // Sort casts by relevance score for better analysis
@@ -27,11 +28,16 @@ function formatPrompt(query: string, results: any) {
     bio: account.bio || '',
     followerCount: account.followerCount || 0,
     fcCred: account.fcCred || account.fcCredScore || 0,
-    relevanceScore: account.relevanceScore || 0
+    relevanceScore: account.relevanceScore || 0,
+    isVectorMatch: account.isVectorMatch || false
   }));
   
   // Sort accounts by relevance score
   const sortedAccounts = processedAccounts.sort((a, b) => b.relevanceScore - a.relevanceScore);
+
+  // Get counts of semantic search results vs full-text search
+  const vectorAccounts = sortedAccounts.filter(a => a.isVectorMatch).length;
+  const vectorCasts = sortedCasts.filter(c => c.isVectorMatch).length;
 
   return `
 # MISSION
@@ -42,6 +48,12 @@ The user has searched for: "${query}"
 
 The data contains profiles and posts from the Farcaster network. Your task is to analyze this information to deliver precise, evidence-based insights directly addressing the user's query.
 
+# SEARCH METHODOLOGY
+The search uses a combination of semantic vector search and full-text search:
+- ${vectorAccounts} account profiles and ${vectorCasts} casts were found using vector embeddings (semantic similarity)
+- The remaining results were found using full-text search
+- Semantic vector matches often produce higher quality results that better match the intent of the query
+
 # DATA STRUCTURE
 The search results contain two main sections:
 
@@ -51,6 +63,7 @@ These are Farcaster user profiles matching the search query.
 - bio: Profile description
 - fcCredScore/fcCred: Credibility score (1000=good, 5000=great, 10000=exceptional)
 - followerCount: Number of followers
+- isVectorMatch: Whether this was found via semantic vector search (higher relevance)
 
 ## CASTS (${sortedCasts.length} results)
 These are individual posts by Farcaster users matching the search query.
@@ -60,6 +73,7 @@ These are individual posts by Farcaster users matching the search query.
 - timestamp: When the post was created
 - mentionedChannels: Any channels mentioned in the post
 - mentionedUsers: Users mentioned in the post
+- isVectorMatch: Whether this was found via semantic vector search (higher relevance)
 
 # RESPONSE GUIDELINES
 ## Understanding User Intent
@@ -75,6 +89,7 @@ These are individual posts by Farcaster users matching the search query.
 - Identify patterns and connections across multiple sources
 - Highlight timely and emerging information
 - For hiring/recruiting queries: Only suggest people who would be new additions to the team, not existing team members
+- Prioritize results from vector search (isVectorMatch: true) as they are more likely to match the semantic intent
 
 ## Tone & Style
 - Write with precision and confidence
@@ -147,8 +162,9 @@ export async function POST(request: Request) {
     // Log structured data format
     const accountsCount = results.accounts?.length || 0;
     const castsCount = results.casts?.length || 0;
+    const vectorMatchesCount = results.stats?.vectorResultsCount || 0;
     
-    console.log(`Agent API: Processing ${accountsCount} accounts and ${castsCount} casts for query: "${query}"`);
+    console.log(`Agent API: Processing ${accountsCount} accounts and ${castsCount} casts (${vectorMatchesCount} from vector search) for query: "${query}"`);
     
     // Format the prompt for the model using the original or processed query
     const prompt = formatPrompt(originalQuery || query, results);
