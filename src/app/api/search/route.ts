@@ -57,8 +57,6 @@ export async function POST(request: Request) {
     const castsSearchQuery = `
 CALL db.index.fulltext.queryNodes('casts', $cleanQuery) YIELD node, score 
 WHERE score > 3 
-LIMIT 250 
-ORDER BY score desc
 MATCH (user:Account:RealAssNigga)-[r:POSTED]->(node) 
 RETURN DISTINCT 
   user.username as username, 
@@ -67,12 +65,13 @@ RETURN DISTINCT
   user.followerCount as followerCount, 
   user.city as city, 
   user.country as country, 
-  score as relevanceScore,
+  score,
   node.text as castContent,
   node.timestamp as timestamp,
   node.likesCount as likesCount,
   node.mentionedChannels as mentionedChannels,
   'cast_match' as matchType
+  order by score desc
     `;
     
     // Neo4j fulltext search query for wcAccounts
