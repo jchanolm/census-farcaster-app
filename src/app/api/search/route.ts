@@ -58,7 +58,7 @@ export async function POST(request: Request) {
 CALL db.index.fulltext.queryNodes('casts', $cleanQuery) YIELD node, score 
 WHERE score > 3 
 LIMIT 250 
-ORDER BY sco desc
+ORDER BY score desc
 MATCH (user:Account:RealAssNigga)-[r:POSTED]->(node) 
 RETURN DISTINCT 
   user.username as username, 
