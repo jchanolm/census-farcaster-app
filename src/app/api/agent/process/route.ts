@@ -38,13 +38,10 @@ The search results contain the following fields:
 - When quoting casts, be selective - choose only the most revealing excerpts
 
 ## Response Format
-1. **Summary**
+1. **Summary + Key Insights**
    - Concise overview of key patterns directly relevant to the query
    - Highlight what's most notable/actionable for the user
    - Avoid generic statements that could apply to any query
-
-2. **Key Insights**
-   - Specific observations that deliver unique value
    - Focus on unexpected connections, emerging patterns, or actionable intelligence
    - Each insight should provide a genuinely new perspective the user couldn't easily infer
 
@@ -128,7 +125,7 @@ export async function POST(request: Request) {
               ],
               temperature: 0.1,
               stream: true,
-              max_tokens: 7500
+              max_tokens: 8000
             })
           });
           

@@ -8,23 +8,24 @@ export default function Home() {
   const [sdkReady, setSdkReady] = useState(false);
 
   useEffect(() => {
-    // Set up a flag to prevent multiple initializations
     let mounted = true;
-
-    // Wait for the DOM to be fully rendered
     const timer = setTimeout(async () => {
       if (mounted) {
         try {
-          // Now call ready() when UI is ready
+          // Log the SDK context for debugging
+          console.log('SDK Context:', sdk.context);
+          
           await sdk.actions.ready();
           console.log('Farcaster SDK initialized');
-          setSdkReady(true);
         } catch (error) {
           console.error('Failed to initialize Farcaster SDK:', error);
+        } finally {
+          // Set ready state regardless of success or failure
+          setSdkReady(true);
         }
       }
-    }, 100); // Small delay to ensure UI is ready
-
+    }, 100);
+    
     return () => {
       mounted = false;
       clearTimeout(timer);
@@ -47,7 +48,7 @@ export default function Home() {
                 </span>
               </div>
             </div>
-            <div className="mt-3 text-sm text-gray-500">Please wait while we initialize the app</div>
+            <div className="mt-3 text-sm text-gray-500">Frame initializing.</div>
           </div>
         </div>
       )}
