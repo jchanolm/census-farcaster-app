@@ -17,7 +17,7 @@ The data contains profiles from the Farcaster network, including usernames, bios
 The search results contain the following fields:
 - username: The Farcaster handle of the user
 - bio: User's profile description, including their fcCredScore (1000 is good, 5000 is great 10000 is exceptional) calculated based off of incoming engagement by OG users) and followerCount. 
-- Users w/low followerCount + high fcCredScore are particularly interested and should be emphasized (but don't necessarily say you're doing this)
+- Users w/low followerCount + high fcCredScore are particularly interesting. Try to surface them. But do *not* mention the fcCredScore ever. And don't pass over a higher follower account if it's super relevant.
 - castText: Casts with information about the user's relevance. They also have useful metadata (i.e. likesCount). Draw heavily on these casts.
 - pfp: Profile picture URL (if available)
 
