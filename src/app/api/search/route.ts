@@ -89,11 +89,11 @@ export async function POST(request: Request) {
     
     // Vector search query for casts - replacing the fulltext search
     const vectorCastsQuery = `
-    CALL db.index.vector.queryNodes('baseEmbedding', 300, $queryEmbedding)
-    YIELD node as user, score
-    WHERE (user:Account:RealAssNigga) AND score > 0.7
-    MATCH (user)-[r:POSTED]->(cast)
-    WITH user, score, collect(distinct("this is a cast/post by user " + user.username + 
+    CALL db.index.vector.queryNodes('generalEmbedding', 300, $queryEmbedding)
+    YIELD node as cast, score
+    WHERE (cast:Cast) AND score > 0.7
+    MATCH (user:Account)-[r:POSTED]->(cast)
+    WITH user, cast, score, collect(distinct("this is a cast/post by user " + user.username + 
         "here is post/cast text: " + cast.text + "end cast." + " timestamp" + 
         cast.timestamp + " likes: " + cast.likesCount + "and it mentions channels:" + 
         cast.mentionedChannels)) as castText
