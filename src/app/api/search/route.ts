@@ -1,33 +1,32 @@
 import { NextResponse } from 'next/server';
 import { runQuery } from '@/lib/neo4j';
+import OpenAI from "openai";
 
 // Enable dynamic rendering for this route
 export const dynamic = 'force-dynamic';
 
+// Initialize OpenAI client for DeepInfra
+const openai = new OpenAI({
+  baseURL: 'https://api.deepinfra.com/v1/openai',
+  apiKey: process.env.DEEPINFRA_API_KEY,
+});
+
 // Function to generate embeddings using DeepInfra's BGE-M3 API
 async function generateQueryEmbedding(query: string): Promise<number[]> {
   try {
-    const response = await fetch("https://api.deepinfra.com/v1/openai/embeddings", {
-      method: 'POST',
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${process.env.DEEPINFRA_API_KEY}`
-      },
-      body: JSON.stringify({
-        "input": query,
-        "model": "BAAI/bge-m3",
-        "encoding_format": "float"
-      })
+    const embedding = await openai.embeddings.create({
+      model: "BAAI/bge-m3",
+      input: query,
+      encoding_format: "float",
     });
-
-    const data = await response.json();
     
-    if (!data.data || !data.data[0] || !data.data[0].embedding) {
-      console.error('Invalid embedding response:', data);
+    if (!embedding.data || !embedding.data[0] || !embedding.data[0].embedding) {
+      console.error('Invalid embedding response:', embedding);
       throw new Error('Failed to get valid embedding from API');
     }
     
-    return data.data[0].embedding;
+    console.log(`Generated embedding with ${embedding.usage.prompt_tokens} tokens`);
+    return embedding.data[0].embedding;
   } catch (error) {
     console.error('Error generating embedding:', error);
     throw new Error('Failed to generate query embedding');
