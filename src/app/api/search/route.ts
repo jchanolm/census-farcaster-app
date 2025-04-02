@@ -4,6 +4,36 @@ import { runQuery } from '@/lib/neo4j';
 // Enable dynamic rendering for this route
 export const dynamic = 'force-dynamic';
 
+// Function to generate embeddings using DeepInfra's BGE-M3 API
+async function generateQueryEmbedding(query: string): Promise<number[]> {
+  try {
+    const response = await fetch("https://api.deepinfra.com/v1/openai/embeddings", {
+      method: 'POST',
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${process.env.DEEPINFRA_TOKEN}`
+      },
+      body: JSON.stringify({
+        "input": query,
+        "model": "BAAI/bge-m3",
+        "encoding_format": "float"
+      })
+    });
+
+    const data = await response.json();
+    
+    if (!data.data || !data.data[0] || !data.data[0].embedding) {
+      console.error('Invalid embedding response:', data);
+      throw new Error('Failed to get valid embedding from API');
+    }
+    
+    return data.data[0].embedding;
+  } catch (error) {
+    console.error('Error generating embedding:', error);
+    throw new Error('Failed to generate query embedding');
+  }
+}
+
 function sanitizeQuery(query: string): { 
   originalQuery: string; 
   cleanQuery: string; 
@@ -53,12 +83,36 @@ export async function POST(request: Request) {
     const { cleanQuery } = sanitizeQuery(query);
     console.log(`Processing sanitized query: ${cleanQuery}`);
     
-    // Neo4j fulltext search query for casts
-    const castsSearchQuery = `
-CALL db.index.fulltext.queryNodes('casts', $cleanQuery) YIELD node, score WHERE score > 3 MATCH (node) ORDER BY score DESC LIMIT 300 MATCH (user:Account:RealAssNigga)-[r:POSTED]->(node) WITH user, max(score) + avg(score) as avgMentionQuality, collect(distinct("this is a cast/post by user " + user.username +  "here is post/cast text: " + node.text + "end cast." + " timestamp" + node.timestamp + " likes: " + node.likesCount + "and it mentions channels:" + node.mentionedChannels)) as castText RETURN DISTINCT user.username as username, 
-user.bio as bio, user.ogInteractionsCount as fcCredScore,  user.followerCount as followerCount, user.city as city, user.country as country, avgMentionQuality, castText, 'cast_match' as matchType ORDER BY avgMentionQuality DESC    `;
+    // Generate embedding for the query
+    console.log('Generating embedding for query...');
+    const queryEmbedding = await generateQueryEmbedding(cleanQuery);
+    console.log('Embedding generated successfully');
     
-    // Neo4j fulltext search query for wcAccounts
+    // Vector search query for casts - replacing the fulltext search
+    const vectorCastsQuery = `
+    CALL db.index.vector.queryNodes('account_embeddings', 300, $queryEmbedding)
+    YIELD node as user, score
+    WHERE (user:Account:RealAssNigga) AND score > 0.7
+    MATCH (user)-[r:POSTED]->(cast)
+    WITH user, score, collect(distinct("this is a cast/post by user " + user.username + 
+        "here is post/cast text: " + cast.text + "end cast." + " timestamp" + 
+        cast.timestamp + " likes: " + cast.likesCount + "and it mentions channels:" + 
+        cast.mentionedChannels)) as castText
+    RETURN DISTINCT 
+        user.username as username,
+        user.bio as bio,
+        user.ogInteractionsCount as fcCredScore,
+        user.followerCount as followerCount,
+        user.city as city,
+        user.country as country,
+        score as avgMentionQuality,
+        castText,
+        'cast_match' as matchType
+    ORDER BY score DESC
+    `;
+    
+    // Keep the existing accounts search query for now
+    // This could also be converted to vector search if needed
     const accountsSearchQuery = `
     CALL db.index.fulltext.queryNodes('wcAccounts', $cleanQuery) YIELD node, score
     WHERE score > 100
@@ -79,9 +133,9 @@ user.bio as bio, user.ogInteractionsCount as fcCredScore,  user.followerCount as
     `;
     
     // Execute the queries
-    console.log('Running casts query...');
-    const castsRecords = await runQuery(castsSearchQuery, { cleanQuery });
-    console.log(`Casts query returned ${castsRecords.length} records`);
+    console.log('Running vector casts query...');
+    const castsRecords = await runQuery(vectorCastsQuery, { queryEmbedding });
+    console.log(`Vector casts query returned ${castsRecords.length} records`);
     
     console.log('Running accounts query...');
     const accountsRecords = await runQuery(accountsSearchQuery, { cleanQuery });
@@ -119,13 +173,13 @@ user.bio as bio, user.ogInteractionsCount as fcCredScore,  user.followerCount as
   
     // Return results
     return NextResponse.json({ 
-      originalQuery: query,  // Add this line
+      originalQuery: query,
       query: cleanQuery, 
       results,
       totalResults: results.length,
       castMatches: castsRecords.length,
       accountMatches: accountsRecords.length
-        });
+    });
     
   } catch (error) {
     // Comprehensive error logging and handling

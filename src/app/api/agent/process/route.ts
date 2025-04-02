@@ -18,6 +18,14 @@ The search results contain:
 - username: Farcaster handle
 - bio: Profile description including fcCredScore (1000=good, 5000=great, 10000=exceptional) and followerCount
 - castText: User posts with engagement metrics (likesCount, etc.)
+- matchType: 'cast_match' for content matches, 'account_match' for profile matches
+- For vector search results (cast_match), the score represents semantic similarity 
+
+# SEARCH METHODOLOGY
+Results include both:
+- Direct keyword matches via traditional search
+- Semantic matches via vector search using BGE-M3 embeddings
+This means some results may be conceptually related to the query without containing the exact keywords.
 
 # RESPONSE GUIDELINES
 ## Understanding User Intent
