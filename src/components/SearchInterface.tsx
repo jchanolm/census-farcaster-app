@@ -295,13 +295,16 @@ export default function SearchInterface() {
                     const jsonData = JSON.parse(content);
                     if (jsonData.choices && jsonData.choices[0].delta && jsonData.choices[0].delta.content) {
                       const textChunk = jsonData.choices[0].delta.content;
-                      reportContent += textChunk;
-                      setAgentReport(reportContent);
+                      // Filter out ":keep-alive" from the streaming text
+                      if (textChunk !== ":keep-alive") {
+                        reportContent += textChunk;
+                        setAgentReport(reportContent);
+                      }
                     }
                   } catch (e) {
                     // Fallback for non-JSON data
                     const textContent = line.substring(5).trim();
-                    if (textContent && textContent !== '[DONE]') {
+                    if (textContent && textContent !== '[DONE]' && textContent !== ":keep-alive") {
                       reportContent += textContent;
                       setAgentReport(reportContent);
                     }
@@ -454,7 +457,7 @@ export default function SearchInterface() {
           
           {/* Integrated logs section - in dropdown */}
           {logs.length > 0 && showLogs && (
-            <div className={`mt-3 ${darkMode ? 'bg-[#1a2030]' : 'bg-gray-50'} rounded-md p-3 max-h-32 overflow-y-auto font-mono text-xs`}>
+            <div className={`mt-3 ${darkMode ? 'bg-[#1a2030]' : 'bg-gray-50'} rounded-md p-3 max-h-32 overflow-y-auto scrollbar-hide font-mono text-xs`}>
               {logs.map((log, index) => {
                 let logColor;
                 let logIcon;
