@@ -50,20 +50,34 @@ export async function POST(request: Request) {
     }
 
     // Sanitize the query
-    const { cleanQuery } = sanitizeQuery(query);
+    const { cleanQuery, originalQuery } = sanitizeQuery(query);
     console.log(`Processing sanitized query: ${cleanQuery}`);
     
-    // Neo4j fulltext search query for casts
+    // Neo4j fulltext search query for casts - UPDATED to simplify cast text format
     const castsSearchQuery = `
-CALL db.index.fulltext.queryNodes('casts', $cleanQuery) YIELD node, score WHERE score > 3 MATCH (node) ORDER BY score DESC LIMIT 300 MATCH (user:Account:RealAssNigga)-[r:POSTED]->(node) WITH user, max(score) + avg(score) as avgMentionQuality, collect(distinct("this is a cast/post by user " + user.username +  "here is post/cast text: " + node.text + "end cast." + " timestamp" + node.timestamp + " likes: " + node.likesCount + "and it mentions channels:" + node.mentionedChannels)) as castText RETURN DISTINCT user.username as username, 
-user.bio as bio, user.ogInteractionsCount as fcCredScore,  user.followerCount as followerCount, user.city as city, user.country as country, avgMentionQuality, castText, 'cast_match' as matchType ORDER BY avgMentionQuality DESC    `;
+CALL db.index.fulltext.queryNodes('casts', $cleanQuery) YIELD node, score 
+WHERE score > 3 
+RETURN DISTINCT 
+  node.text as castContent,
+  node.timestamp as timestamp,
+  node.likesCount as likesCount,
+  node.author as warpcastUser,
+  node.bio as warpcastUserBio,
+  node.likesCount,
+  node.mentionedUsers as mentionedUsers,
+  node.mentionedChannels as mentionedChannels,
+  'cast_match' as matchType,
+  score
+  order by score desc
+  limit 200
+    `;
     
     // Neo4j fulltext search query for wcAccounts
     const accountsSearchQuery = `
     CALL db.index.fulltext.queryNodes('wcAccounts', $cleanQuery) YIELD node, score
-    WHERE score > 100
+    WHERE score > 4
     ORDER BY score DESC 
-    LIMIT 7
+    LIMIT 10
     RETURN 
       node.username as username,
       node.bio as bio,
@@ -73,8 +87,8 @@ user.bio as bio, user.ogInteractionsCount as fcCredScore,  user.followerCount as
       node.city as city,
       node.country as country,
       node.pfpUrl as pfpUrl,
-      score as avgMentionQuality,
-      [] as castText,
+      score as relevanceScore,
+      [] as castContent,
       'account_match' as matchType
     `;
     
@@ -87,45 +101,47 @@ user.bio as bio, user.ogInteractionsCount as fcCredScore,  user.followerCount as
     const accountsRecords = await runQuery(accountsSearchQuery, { cleanQuery });
     console.log(`Accounts query returned ${accountsRecords.length} records`);
     
-    // Process all records - putting account matches first
-    const allRecords = [...accountsRecords, ...castsRecords];
-    
-    // Convert Neo4j records to plain objects
-    const results = allRecords.map(record => {
+    // Process accounts and casts separately
+    const accountResults = accountsRecords.map(record => {
       const plainObj: Record<string, any> = {};
-      
-      // Fix for the Symbol issue - convert record keys to strings
       const keys = record.keys.map(key => String(key));
-      
-      // Now use the string keys
       keys.forEach(key => {
         plainObj[key] = record.get(key);
       });
-      
-      // For cast_match records, calculate totalScore
-      if (plainObj.matchType === 'cast_match') {
-        // Calculate a total score for sorting/ranking
-        plainObj.totalScore = plainObj.avgMentionQuality * 10; // Weight factor
-      } else {
-        // For account_match, use avgMentionQuality as totalScore
-        plainObj.totalScore = plainObj.avgMentionQuality * 15; // Higher weight for direct matches
-      }
-      
+      plainObj.totalScore = plainObj.relevanceScore * 15;
       return plainObj;
     });
     
-    // Sort by totalScore
-    results.sort((a, b) => b.totalScore - a.totalScore);
+    const castResults = castsRecords.map(record => {
+      const plainObj: Record<string, any> = {};
+      const keys = record.keys.map(key => String(key));
+      keys.forEach(key => {
+        plainObj[key] = record.get(key);
+      });
+      plainObj.totalScore = plainObj.relevanceScore * 10;
+      return plainObj;
+    });
+    
+    // Organize results into a structured format for the agent
+    const results = {
+      accounts: accountResults,
+      casts: castResults,
+      stats: {
+        totalResults: accountResults.length + castResults.length,
+        accountMatches: accountResults.length,
+        castMatches: castResults.length
+      }
+    };
   
     // Return results
     return NextResponse.json({ 
-      originalQuery: query,  // Add this line
+      originalQuery: originalQuery,
       query: cleanQuery, 
       results,
-      totalResults: results.length,
-      castMatches: castsRecords.length,
-      accountMatches: accountsRecords.length
-        });
+      totalResults: accountResults.length + castResults.length,
+      castMatches: castResults.length,
+      accountMatches: accountResults.length
+    });
     
   } catch (error) {
     // Comprehensive error logging and handling

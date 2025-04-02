@@ -3,7 +3,10 @@ import { NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 
 // Format the data for the AI prompt
-function formatPrompt(query: string, results: any[]) {
+function formatPrompt(query: string, results: any) {
+  // Destructure the structured results
+  const { accounts = [], casts = [] } = results;
+
   return `
 # MISSION
 You are an intelligence analyst processing Farcaster network data to provide actionable insights for onchain builders. Your analysis will support market research, user discovery, technical research, prospecting, and recruiting efforts.
@@ -14,10 +17,22 @@ The user has searched for: "${query}"
 The data contains profiles and posts from the Farcaster network. Your task is to analyze this information to deliver precise, evidence-based insights directly addressing the user's query.
 
 # DATA STRUCTURE
-The search results contain:
+The search results contain two main sections:
+
+## ACCOUNTS (${accounts.length} results)
+These are Farcaster user profiles matching the search query.
 - username: Farcaster handle
-- bio: Profile description including fcCredScore (1000=good, 5000=great, 10000=exceptional) and followerCount
-- castText: User posts with engagement metrics (likesCount, etc.)
+- bio: Profile description
+- fcCredScore/fcCred: Credibility score (1000=good, 5000=great, 10000=exceptional)
+- followerCount: Number of followers
+
+## CASTS (${casts.length} results)
+These are individual posts by Farcaster users matching the search query.
+- username: Author's Farcaster handle
+- castContent: The actual post text
+- likesCount: Number of likes the post received
+- timestamp: When the post was created
+- mentionedChannels: Any channels mentioned in the post
 
 # RESPONSE GUIDELINES
 ## Understanding User Intent
@@ -40,28 +55,34 @@ The search results contain:
 - Be concise and information-dense
 - Avoid generic observations or obvious statements
 - Present factual analysis, not speculation
+- Never include meta-commentary about the data or analysis process
 
 ## Report Structure
 1. **Executive Summary**
    - Concise overview of key findings directly addressing the query
    - 2-3 most significant insights with immediate relevance
    
-2. **Key Findings**
-   - Organized by theme or significance
-   - Each finding supported by specific evidence
-   - Highlight unexpected patterns or notable contradictions
-   
-3. **Relevant Builders & Projects**
+3. **Notable Builders & Projects**
+   - Try to include between 5-10 builders & projects
    - For each builder/project:
      - Clear relevance to the query
      - Specific contributions or expertise
      - Supporting evidence from bio or casts
      - Current focus and notable connections
+   - Focus on unique information not already covered in Key Findings
    
-4. **Strategic Implications** (when appropriate)
+4. **Strategic Implications** (when appropriate and relevant to user's request)
    - Actionable takeaways
    - Emerging opportunities
    - Potential challenges or considerations
+
+# IMPORTANT
+- Ensure Key Findings and Notable Builders sections contain distinct information without redundancy
+- Focus exclusively on addressing the user's query with the provided data
+- Never include meta-commentary about data limitations, analysis process, or caveats
+- If limited data matches the query, provide the best possible analysis with available information without mentioning the limitation
+- Stay strictly on task to the user's request
+- Analyze all available data in your response
 
 # MARKDOWN FORMATTING
 - Use ## for main sections and ### for subsections
@@ -73,8 +94,11 @@ The search results contain:
 - Link to specific casts as [View cast](https://warpcast.com/username/hash)
 - Maintain consistent formatting throughout
 
-# DATA PAYLOAD
-${JSON.stringify(results, null, 2)}
+# ACCOUNTS DATA (${accounts.length} PROFILES)
+${JSON.stringify(accounts, null, 2)}
+
+# CASTS DATA (${casts.length} POSTS)
+${JSON.stringify(casts, null, 2)}
 `;
 }
 
@@ -83,12 +107,16 @@ export async function POST(request: Request) {
     console.log('Agent API: Request received');
     const { originalQuery, query, results } = await request.json();
     
-    if (!query || !results || !Array.isArray(results)) {
-      console.log('Agent API: Invalid input', { query, resultsProvided: !!results, isArray: Array.isArray(results) });
+    if (!query || !results) {
+      console.log('Agent API: Invalid input', { query, resultsProvided: !!results });
       return NextResponse.json({ error: 'Invalid input' }, { status: 400 });
     }
     
-    console.log(`Agent API: Processing ${results.length} results for query: "${query}"`);
+    // Log structured data format
+    const accountsCount = results.accounts?.length || 0;
+    const castsCount = results.casts?.length || 0;
+    
+    console.log(`Agent API: Processing ${accountsCount} accounts and ${castsCount} casts for query: "${query}"`);
     
     // Format the prompt for the model using the original or processed query
     const prompt = formatPrompt(originalQuery || query, results);
