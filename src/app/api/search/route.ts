@@ -89,7 +89,7 @@ export async function POST(request: Request) {
     
     // Vector search query for casts - replacing the fulltext search
     const vectorCastsQuery = `
-    CALL db.index.vector.queryNodes('generalEmbedding', 300, $queryEmbedding)
+    CALL db.index.vector.queryNodes('generalEmbeddings', 300, $queryEmbedding)
     YIELD node as cast, score
     WHERE (cast:Cast) AND score > 0.7
     MATCH (user:Account)-[r:POSTED]->(cast)
