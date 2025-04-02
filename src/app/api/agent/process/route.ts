@@ -4,8 +4,34 @@ export const dynamic = 'force-dynamic';
 
 // Format the data for the AI prompt
 function formatPrompt(query: string, results: any) {
-  // Destructure the structured results
+  // Ensure results structure exists with defaults
   const { accounts = [], casts = [] } = results;
+  
+  // Preprocess cast data to handle any missing fields
+  const processedCasts = casts.map(cast => ({
+    username: cast.username || 'unknown',
+    castContent: cast.castContent || '',
+    likesCount: cast.likesCount || 0,
+    timestamp: cast.timestamp || '',
+    mentionedChannels: cast.mentionedChannels || [],
+    mentionedUsers: cast.mentionedUsers || [],
+    relevanceScore: cast.relevanceScore || 0
+  }));
+  
+  // Sort casts by relevance score for better analysis
+  const sortedCasts = processedCasts.sort((a, b) => b.relevanceScore - a.relevanceScore);
+  
+  // Preprocess account data
+  const processedAccounts = accounts.map(account => ({
+    username: account.username || 'unknown',
+    bio: account.bio || '',
+    followerCount: account.followerCount || 0,
+    fcCred: account.fcCred || account.fcCredScore || 0,
+    relevanceScore: account.relevanceScore || 0
+  }));
+  
+  // Sort accounts by relevance score
+  const sortedAccounts = processedAccounts.sort((a, b) => b.relevanceScore - a.relevanceScore);
 
   return `
 # MISSION
@@ -19,20 +45,21 @@ The data contains profiles and posts from the Farcaster network. Your task is to
 # DATA STRUCTURE
 The search results contain two main sections:
 
-## ACCOUNTS (${accounts.length} results)
+## ACCOUNTS (${sortedAccounts.length} results)
 These are Farcaster user profiles matching the search query.
 - username: Farcaster handle
 - bio: Profile description
 - fcCredScore/fcCred: Credibility score (1000=good, 5000=great, 10000=exceptional)
 - followerCount: Number of followers
 
-## CASTS (${casts.length} results)
+## CASTS (${sortedCasts.length} results)
 These are individual posts by Farcaster users matching the search query.
 - username: Author's Farcaster handle
 - castContent: The actual post text
 - likesCount: Number of likes the post received
 - timestamp: When the post was created
 - mentionedChannels: Any channels mentioned in the post
+- mentionedUsers: Users mentioned in the post
 
 # RESPONSE GUIDELINES
 ## Understanding User Intent
@@ -64,7 +91,7 @@ These are individual posts by Farcaster users matching the search query.
    - Concise overview of key findings directly addressing the query
    - 2-3 most significant insights with immediate relevance
    
-3. **Notable Builders & Projects**
+2. **Notable Builders & Projects**
    - Try to include between 5-10 builders & projects
    - For each builder/project:
      - Clear relevance to the query
@@ -74,7 +101,7 @@ These are individual posts by Farcaster users matching the search query.
    - Focus on unique information not already covered in Key Findings
    - For hiring/recruiting queries: Only include external candidates who are not already part of the organization
    
-4. **Strategic Implications** (when appropriate and relevant to user's request)
+3. **Strategic Implications** (when appropriate and relevant to user's request)
    - Actionable takeaways
    - Emerging opportunities
    - Potential challenges or considerations
@@ -99,11 +126,11 @@ These are individual posts by Farcaster users matching the search query.
 - Link to specific casts as [View cast](https://warpcast.com/username/hash)
 - Maintain consistent formatting throughout
 
-# ACCOUNTS DATA (${accounts.length} PROFILES)
-${JSON.stringify(accounts, null, 2)}
+# ACCOUNTS DATA (${sortedAccounts.length} PROFILES)
+${JSON.stringify(sortedAccounts, null, 2)}
 
-# CASTS DATA (${casts.length} POSTS)
-${JSON.stringify(casts, null, 2)}
+# CASTS DATA (${sortedCasts.length} POSTS)
+${JSON.stringify(sortedCasts, null, 2)}
 `;
 }
 
@@ -198,6 +225,9 @@ export async function POST(request: Request) {
             
             for (const line of lines) {
               if (!line.trim() || line.includes('[DONE]')) continue;
+              
+              // Skip keepalive messages
+              if (line.includes(":keep-alive")) continue;
               
               // Forward the chunk to the client
               controller.enqueue(encoder.encode(line + '\n\n'));
