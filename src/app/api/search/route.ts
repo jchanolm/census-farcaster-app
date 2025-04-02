@@ -84,7 +84,7 @@ export async function POST(request: Request) {
     // Step 2: Use vector search with separate queries for accounts and casts
     const combinedVectorSearchQuery = `
     // Account search with fulltext search using cleaned query
-    CALL db.index.fulltext.queryNodes("accounts", $effectiveQuery) YIELD node as accountNode, score as accountScore
+    CALL db.index.fulltext.queryNodes("accounts", $effectiveQuery) YIELD node as accountNode, score 
     WHERE score > 3
     WITH 
       accountNode.username as username,
@@ -100,17 +100,17 @@ export async function POST(request: Request) {
       NULL as likesCount,
       NULL as mentionedChannels,
       NULL as mentionedUsers,
-      accountScore as relevanceScore,
+      score,
       'account_match' as matchType
-    RETURN username, bio, followerCount, fcCred, state, city, country, pfpUrl, castContent, timestamp, likesCount, mentionedChannels, mentionedUsers, relevanceScore, matchType
-    ORDER BY relevanceScore DESC
+    RETURN username, bio, followerCount, fcCred, state, city, country, pfpUrl, castContent, timestamp, likesCount, mentionedChannels, mentionedUsers, score, matchType
+    ORDER BY score DESC
     LIMIT 5
 
     UNION ALL
 
     // Cast search with vector similarity using embeddings
-    CALL db.index.vector.queryNodes('castsEmbeddings', 250, $queryEmbedding) YIELD node as castNode, score as castScore 
-    WHERE castScore > 0.75
+    CALL db.index.vector.queryNodes('castsEmbeddings', 250, $queryEmbedding) YIELD node as castNode, score as score 
+    WHERE score > 0.75
     WITH 
       castNode.author as username,
       NULL as bio,
@@ -125,11 +125,11 @@ export async function POST(request: Request) {
       castNode.likesCount as likesCount,
       castNode.mentionedChannels as mentionedChannels,
       castNode.mentionedUsers as mentionedUsers,
-      castScore as relevanceScore,
+      score,
       'cast_match' as matchType
     WHERE castContent IS NOT NULL
-    RETURN username, bio, followerCount, fcCred, state, city, country, pfpUrl, castContent, timestamp, likesCount, mentionedChannels, mentionedUsers, relevanceScore, matchType
-    ORDER BY relevanceScore DESC
+    RETURN username, bio, followerCount, fcCred, state, city, country, pfpUrl, castContent, timestamp, likesCount, mentionedChannels, mentionedUsers, score, matchType
+    ORDER BY score DESC
     `;
     
     console.log('Running vector search queries...');
