@@ -13,11 +13,15 @@ The user has searched for: "${query}"
 
 The data contains profiles from the Farcaster network, including usernames, bios, and text from their posts (casts). Your task is to analyze this data to identify the most relevant builders and projects for the user's query.
 
+Avoid contrivances and leaps of logic.
+
 # DATA STRUCTURE
 The search results contain the following fields:
 - username: The Farcaster handle of the user
 - bio: User's profile description, including their fcCredScore (1000 is good, 5000 is great 10000 is exceptional) calculated based off of incoming engagement by OG users) and followerCount. 
 - castText: Casts with information about the user's relevance. They also have useful metadata (i.e. likesCount). Draw heavily on these casts.
+
+When you give an answer start with a paragraph quoting from casts you received.
 
 
 # RESPONSE GUIDELINES
