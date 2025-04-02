@@ -11,7 +11,7 @@ async function generateQueryEmbedding(query: string): Promise<number[]> {
       method: 'POST',
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${process.env.DEEPINFRA_TOKEN}`
+        "Authorization": `Bearer ${process.env.DEEPINFRA_API_KEY}`
       },
       body: JSON.stringify({
         "input": query,
