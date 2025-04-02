@@ -62,14 +62,8 @@ These are individual posts by Farcaster users matching the search query.
    - Concise overview of key findings directly addressing the query
    - 2-3 most significant insights with immediate relevance
    
-2. **Key Findings**
-   - Organized by theme or significance
-   - Each finding supported by specific evidence
-   - Highlight unexpected patterns or notable contradictions
-   - Focus on trends, market insights, and technical developments
-   - Avoid duplicating information about specific builders that will be covered later
-   
 3. **Notable Builders & Projects**
+   - Try to include between 5-10 builders & projects
    - For each builder/project:
      - Clear relevance to the query
      - Specific contributions or expertise
