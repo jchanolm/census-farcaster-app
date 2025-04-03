@@ -89,9 +89,9 @@ export async function POST(request: Request) {
     // Step 2: Use vector search with separate queries for accounts and casts
     const combinedVectorSearchQuery = `
     // Cast search with vector similarity using embeddings
-    CALL db.index.vector.queryNodes('castsEmbeddings', 250, $queryEmbedding) YIELD node as castNode, score as score 
+    CALL db.index.fulltext.queryNodes('casts', $effectiveQuery) YIELD node as castNode, score as score 
+    WHERE score > 5
     MATCH (castNode)-[]-(real:RealAssNigga:Account)
-    WHERE score > 0.72
     WITH 
       castNode.author as username,
       "https://warpcast.com/" + castNode.author as authorProfileUrl,
@@ -113,6 +113,7 @@ export async function POST(request: Request) {
     WHERE castContent IS NOT NULL
     RETURN username, bio, followerCount, fcCred, state, city, country, pfpUrl, castContent, timestamp, likesCount, mentionedChannels, mentionedUsers, score, matchType
     ORDER BY score DESC
+    LIMIT 250
 
     UNION ALL
 
