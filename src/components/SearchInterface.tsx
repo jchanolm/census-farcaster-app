@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { sdk } from '@farcaster/frame-sdk';
-import AddMiniAppButton from '@/components/AddMiniAppButton';
 import AddFrameButton from '@/components/AddFrameButton';
 import SidekickBanner from '@/components/SidekickBanner';
 import AgentReport from './AgentReport';
@@ -317,11 +316,7 @@ export default function SearchInterface() {
         
         <div className="flex items-center">
           {/* Follow Button (right side) */}
-          <AddFrameButton />
-          
-          {/* Add Mini App Button (moved to right side) */}
-          <AddMiniAppButton />
-          
+          <AddFrameButton />          
           {/* Theme toggle button */}
           <button
             onClick={toggleDarkMode}
