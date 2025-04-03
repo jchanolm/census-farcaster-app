@@ -367,7 +367,10 @@ export default function SearchInterface() {
                   }
                 }}
               />
-              <div className="flex justify-end mt-2">
+              <div className="flex justify-between mt-2">
+                <div className={`text-xs ${textMutedColor} italic`}>
+                  Tip: Short, direct queries with descriptive adjectives work best
+                </div>
                 <button
                   type="submit"
                   disabled={isSearching || isAgentProcessing || !query.trim()}
@@ -386,7 +389,6 @@ export default function SearchInterface() {
               <span className="inline-block w-1.5 h-3.5 bg-blue-500 ml-0.5 animate-pulse"></span>
             </div>
           )}
-          
           {/* Search status */}
           <div className={`flex items-center mt-3 text-xs ${textMutedColor} font-mono`}>
             {isSearching ? (
