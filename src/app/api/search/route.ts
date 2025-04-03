@@ -109,9 +109,11 @@ export async function POST(request: Request) {
       castNode.mentionedUsers as mentionedUsers,
       score,
       avg(score) * sum(score) as scorecof, 
-      'cast_match' as matchType
+      'cast_match' as matchType,
+      NULL as profileUrl,
+      NULL as pfpUrl
     WHERE castContent IS NOT NULL
-    RETURN username, bio, followerCount, fcCred, state, city, country, castContent, timestamp, likesCount, mentionedChannels, mentionedUsers, score, matchType
+    RETURN username, bio, followerCount, fcCred, state, city, country, profileUrl, pfpUrl, castContent, timestamp, likesCount, mentionedChannels, mentionedUsers, score, matchType
     ORDER BY scorecof DESC
 
     UNION ALL
@@ -135,8 +137,9 @@ export async function POST(request: Request) {
       NULL as mentionedChannels,
       NULL as mentionedUsers,
       score,
-      'account_match' as matchType
-    RETURN username, bio, followerCount, fcCred, state, city, country, pfpUrl, castContent, timestamp, likesCount, mentionedChannels, mentionedUsers, score, matchType
+      'account_match' as matchType,
+      NULL as authorProfileUrl
+    RETURN username, bio, followerCount, fcCred, state, city, country, profileUrl, pfpUrl, castContent, timestamp, likesCount, mentionedChannels, mentionedUsers, score, matchType
     ORDER BY score DESC
     LIMIT 2
     `;
