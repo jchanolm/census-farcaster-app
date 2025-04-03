@@ -132,8 +132,9 @@ These are individual posts by Farcaster users matching the search query.
 - Use bullet lists for related points and supporting evidence
 - Use > blockquotes for direct quotes from casts
 - Use horizontal rules (---) to separate major sections
-- Format links as [Username](https://warpcast.com/username)
-- Link to specific casts as [View cast](https://warpcast.com/username/hash)
+- When referencing a user, like to their $profileUrl when available
+- When referencing a cast, link to the $castUrl when available
+- When referencing an entity without an account, link to the relevant $castUrl or $profileUrl
 - Maintain consistent formatting throughout
 
 # ACCOUNTS DATA (${sortedAccounts.length} PROFILES)

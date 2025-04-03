@@ -88,6 +88,7 @@ export async function POST(request: Request) {
     WHERE score > 3
     WITH 
       accountNode.username as username,
+      "https://warpcast.com/" + accountNode.username as profileUrl,
       accountNode.bio as bio,
       accountNode.followerCount as followerCount,
       accountNode.ogInteractionsCount as fcCred,
@@ -113,6 +114,7 @@ export async function POST(request: Request) {
     WHERE score > 0.7
     WITH 
       castNode.author as username,
+      "https://warpcast.com/" + castNode.author as profileUrl,
       NULL as bio,
       NULL as followerCount,
       NULL as fcCred,
@@ -121,6 +123,7 @@ export async function POST(request: Request) {
       NULL as country,
       NULL as pfpUrl,
       castNode.text as castContent,
+      "https://warpcast.com/" + castNode.author + "/" + castNode.hash as castUrl,
       castNode.timestamp as timestamp,
       castNode.likesCount as likesCount,
       castNode.mentionedChannels as mentionedChannels,

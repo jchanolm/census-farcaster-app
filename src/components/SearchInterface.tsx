@@ -17,11 +17,35 @@ type LogEntry = {
 };
 
 type SearchResult = {
-  username: string;
-  bio?: string;
-  text?: string;
-  castText?: string[];
-  totalScore?: number;
+  results?: {
+    accounts?: {
+      username: string;
+      displayName?: string;
+      pfp?: string;
+      bio?: string;
+      followerCount?: number;
+      followingCount?: number;
+      fid?: number;
+      totalScore?: number;
+      bioScore?: number;
+      usernameScore?: number;
+      displayNameScore?: number;
+      [key: string]: any;
+    }[];
+    casts?: {
+      username: string;
+      displayName?: string;
+      pfp?: string;
+      text: string;
+      timestamp?: string;
+      totalScore?: number;
+      textScore?: number;
+      usernameScore?: number;
+      displayNameScore?: number;
+      [key: string]: any;
+    }[];
+  };
+  query?: string;
   [key: string]: any;
 };
 
@@ -125,7 +149,7 @@ function AgentReport({ report, darkMode, isLoading }) {
       <div className="flex items-center mb-5">
         <div className="w-4 h-4 mr-2 bg-blue-500 rounded-sm"></div>
         <div className={`text-xs uppercase tracking-wider ${darkMode ? 'text-gray-300' : 'text-gray-600'} font-semibold font-mono`}>
-          INTELLIGENCE REPORT
+          FINDINGS
         </div>
       </div>
       
@@ -152,7 +176,7 @@ export default function SearchInterface() {
   const [typewriterText, setTypewriterText] = useState('');
   const [typewriterIndex, setTypewriterIndex] = useState(0);
   const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [results, setResults] = useState<SearchResult[]>([]);
+  const [results, setResults] = useState<SearchResult>({});
   const [showLogs, setShowLogs] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const logsEndRef = useRef<HTMLDivElement>(null);
@@ -258,7 +282,7 @@ export default function SearchInterface() {
         addLog(`Search complete - no matching accounts or casts found`, 'warning');
       }
       
-      setResults(data.results || { accounts: [], casts: [] });
+      setResults(data || { results: { accounts: [], casts: [] } });
       setIsSearching(false);
       setIsCompleted(true);
       
@@ -451,7 +475,7 @@ export default function SearchInterface() {
             {isSearching ? (
               <>
                 <span className="w-2 h-2 bg-blue-500 rounded-full mr-2 animate-pulse"></span>
-                <span>Scanning builders...</span>
+                <span>Searching...</span>
               </>
             ) : isAgentProcessing ? (
               <>
