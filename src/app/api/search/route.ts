@@ -89,8 +89,8 @@ export async function POST(request: Request) {
     // Step 2: Use vector search with separate queries for accounts and casts
     const combinedVectorSearchQuery = `
     // Cast search with vector similarity using embeddings
-    CALL db.index.vector.queryNodes('castsEmbeddings', 250, $queryEmbedding) YIELD node as castNode, score
-    WHERE score > .71
+    CALL db.index.vector.queryNodes('castsEmbeddings', 200, $queryEmbedding) YIELD node as castNode, score
+    WHERE score > .7
     match (account:Warpcast:RealAssNigga)-[]-(castNode)
     WITH 
       castNode.author as username,
