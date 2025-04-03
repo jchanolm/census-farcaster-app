@@ -52,7 +52,7 @@ The search results contain two main sections:
 These are Farcaster user profiles matching the search query.
 - username: Farcaster handle
 - bio: Profile description
-- fcCredScore/fcCred: Credibility score (1000=good, 5000=great, 10000=exceptional)
+- fcCred: Credibility score based on engagement from OG accounts (1000=good, 5000=great, 10000=exceptional)
 - followerCount: Number of followers
 - profileUrl: The URL to the user's Farcaster profile
 
@@ -111,7 +111,8 @@ These are individual posts by Farcaster users matching the search query.
      - Specific contributions or expertise
      - Supporting evidence from bio or casts
      - Current focus and notable connections
-     - ALWAYS include a link to their profile URL using [username](profileUrl) format
+     - ALWAYS include a link to their profile URL using [$username](profileUrl) format
+     - ALWAYS include a link to casts cited using [cast](castUrl) format
    - Focus on unique information not already covered in Key Findings
    - For hiring/recruiting queries: Only include external candidates who are not already part of the organization
    
