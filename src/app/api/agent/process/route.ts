@@ -111,8 +111,8 @@ These are individual posts by Farcaster users matching the search query.
      - Specific contributions or expertise
      - Supporting evidence from bio or casts
      - Current focus and notable connections
-     - ALWAYS include a link to their profile URL using [$username](profileUrl) format
-     - ALWAYS include a link to casts cited using [cast](castUrl) format
+     - ALWAYS include a link to their profile URL using [username](profileUrl) format
+     - ALWAYS include a link to casts cited using [View cast](castUrl) format
    - Focus on unique information not already covered in Key Findings
    - For hiring/recruiting queries: Only include external candidates who are not already part of the organization
    
