@@ -6,7 +6,7 @@ import React from 'react';
 export default function SidekickBanner({ darkMode = true }) {
   return (
     <a
-      href="https://mini.sidequest.build/"
+      href="https://www.sidequest.build/quotient"
       target="_blank"
       rel="noopener noreferrer"
       className={`w-full max-w-lg mx-auto flex items-center justify-center py-2 px-4 
