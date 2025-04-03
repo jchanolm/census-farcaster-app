@@ -4,11 +4,8 @@ import { useState, useRef, useEffect } from 'react';
 import { sdk } from '@farcaster/frame-sdk';
 import AddFrameButton from '@/components/AddFrameButton';
 import SidekickBanner from '@/components/SidekickBanner';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { atomDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import remarkGfm from 'remark-gfm';
-import rehypeRaw from 'rehype-raw';
-import ReactMarkdown from 'react-markdown';
+import AgentReport from './AgentReport';
+import ShareButton from './ShareButton';
 
 type LogEntry = {
   message: string;
@@ -17,129 +14,65 @@ type LogEntry = {
 };
 
 type SearchResult = {
-  username: string;
-  bio?: string;
-  text?: string;
-  castText?: string[];
-  totalScore?: number;
+  results?: {
+    accounts?: {
+      username: string;
+      bio?: string;
+      followerCount?: number;
+      fcCred?: number;
+      state?: string;
+      city?: string;
+      country?: string;
+      score?: number;
+      profileUrl?: string;
+      [key: string]: any;
+    }[];
+    casts?: {
+      username: string;
+      text?: string;
+      castContent?: string;
+      timestamp?: string;
+      likesCount?: number;
+      mentionedChannels?: string[];
+      mentionedUsers?: string[];
+      score?: number;
+      castUrl?: string;
+      authorProfileUrl?: string;
+      [key: string]: any;
+    }[];
+  };
+  query?: string;
   [key: string]: any;
 };
 
-function AgentReport({ report, darkMode, isLoading }) {
-  if (isLoading) {
-    return (
-      <div className={`${darkMode ? 'bg-[#121620]' : 'bg-white'} rounded-lg border ${darkMode ? 'border-[#2a3343]' : 'border-gray-200'} p-5 shadow-sm mb-6 w-full`}>
-        <div className="flex items-center mb-3">
-          <div className="w-4 h-4 mr-2 rounded-full bg-blue-500 animate-pulse"></div>
-          <div className={`text-xs uppercase tracking-wider ${darkMode ? 'text-gray-300' : 'text-gray-600'} font-semibold font-mono`}>
-            ANALYSIS
-          </div>
-        </div>
-        
-        <div className="my-6 flex flex-col items-center py-4">
-          <div className="flex space-x-2 justify-center mb-3">
-            <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
-            <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse delay-100"></div>
-            <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse delay-200"></div>
-          </div>
-          <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-            Generating report...
-          </p>
-        </div>
-      </div>
-    );
+/**
+ * Extract all usernames from search results
+ */
+function extractUsernames(results: SearchResult): string[] {
+  const usernames: string[] = [];
+  
+  // Extract from accounts
+  if (results?.results?.accounts && Array.isArray(results.results.accounts)) {
+    results.results.accounts.forEach(account => {
+      if (account.username) usernames.push(account.username);
+    });
   }
   
-  if (!report) return null;
-  
-  // Use higher contrast text colors based on dark mode
-  const headerColor = darkMode ? 'text-blue-300' : 'text-blue-700';
-  const accentColor = darkMode ? 'text-blue-200' : 'text-blue-700';
-  
-  // Custom renderer for React Markdown components
-  const components = {
-    // Headings
-    h1: ({node, ...props}) => <h1 className={`${headerColor} font-mono text-lg uppercase tracking-wider font-medium my-4`} {...props} />,
-    h2: ({node, ...props}) => <h2 className={`${headerColor} font-mono text-md uppercase tracking-wider font-medium my-3`} {...props} />,
-    h3: ({node, ...props}) => <h3 className={`${headerColor} font-mono text-sm uppercase tracking-wider font-medium my-3`} {...props} />,
-    
-    // Links (for @username mentions)
-    a: ({node, ...props}) => {
-      // Check if this is a username mention
-      if (props.href?.startsWith('https://warpcast.com/')) {
-        return <a className={`${accentColor} font-mono hover:underline`} target="_blank" rel="noopener noreferrer" {...props} />;
-      }
-      return <a className={`${accentColor} hover:underline`} target="_blank" rel="noopener noreferrer" {...props} />;
-    },
-    
-    // Lists with custom styling
-    li: ({node, ...props}) => {
-      return (
-        <li className="flex items-start mb-2">
-          <span className={`inline-flex items-center justify-center w-5 h-5 rounded-full ${darkMode ? 'bg-blue-900 bg-opacity-40 text-blue-300' : 'bg-blue-100 text-blue-700'} text-xs font-medium mr-3 flex-shrink-0`}>•</span>
-          <span>{props.children}</span>
-        </li>
-      );
-    },
-    
-    // Add horizontal rule styling
-    hr: ({node, ...props}) => <hr className={`my-4 border-t ${darkMode ? 'border-gray-700' : 'border-gray-300'}`} {...props} />,
-    
-    // Custom paragraphs
-    p: ({node, ...props}) => <p className="mb-3 leading-relaxed" {...props} />,
-    
-    // Bold text
-    strong: ({node, ...props}) => <strong className={`${accentColor} font-semibold`} {...props} />,
-    
-    // Code blocks with syntax highlighting
-    code: ({node, inline, className, children, ...props}) => {
-      const match = /language-(\w+)/.exec(className || '');
-      return !inline && match ? (
-        <SyntaxHighlighter
-          style={atomDark}
-          language={match[1]}
-          PreTag="div"
-          className="rounded-md my-3"
-          {...props}
-        >
-          {String(children).replace(/\n$/, '')}
-        </SyntaxHighlighter>
-      ) : (
-        <code className={`${darkMode ? 'bg-gray-800 text-gray-200' : 'bg-gray-100 text-gray-800'} px-1 py-0.5 rounded text-sm`} {...props}>
-          {children}
-        </code>
-      );
-    },
-    
-    // Blockquotes
-    blockquote: ({node, ...props}) => (
-      <blockquote className={`border-l-4 ${darkMode ? 'border-gray-700 bg-gray-800 bg-opacity-50' : 'border-gray-300 bg-gray-100 bg-opacity-50'} pl-4 py-2 my-3 rounded-r`} {...props} />
-    ),
-  };
-  
-  // Process username mentions before passing to ReactMarkdown
-  const processedReport = report.replace(/@([a-zA-Z0-9_]+)/g, '[@$1](https://warpcast.com/$1)');
-  
-  return (
-    <div className={`${darkMode ? 'bg-[#121620]' : 'bg-white'} rounded-lg border ${darkMode ? 'border-[#2a3343]' : 'border-gray-200'} p-5 shadow-sm mb-6 w-full`}>
-      <div className="flex items-center mb-5">
-        <div className="w-4 h-4 mr-2 bg-blue-500 rounded-sm"></div>
-        <div className={`text-xs uppercase tracking-wider ${darkMode ? 'text-gray-300' : 'text-gray-600'} font-semibold font-mono`}>
-          INTELLIGENCE REPORT
-        </div>
-      </div>
+  // Extract from casts
+  if (results?.results?.casts && Array.isArray(results.results.casts)) {
+    results.results.casts.forEach(cast => {
+      if (cast.username) usernames.push(cast.username);
       
-      <div className={`text-sm ${darkMode ? 'text-gray-100' : 'text-gray-800'} font-sans leading-relaxed`}>
-        <ReactMarkdown 
-          components={components}
-          remarkPlugins={[remarkGfm]}
-          rehypePlugins={[rehypeRaw]}
-        >
-          {processedReport}
-        </ReactMarkdown>
-      </div>
-    </div>
-  );
+      // Also add mentioned users
+      if (cast.mentionedUsers && Array.isArray(cast.mentionedUsers)) {
+        cast.mentionedUsers.forEach(user => {
+          if (typeof user === 'string') usernames.push(user);
+        });
+      }
+    });
+  }
+  
+  return Array.from(new Set(usernames));
 }
 
 export default function SearchInterface() {
@@ -152,12 +85,13 @@ export default function SearchInterface() {
   const [typewriterText, setTypewriterText] = useState('');
   const [typewriterIndex, setTypewriterIndex] = useState(0);
   const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [results, setResults] = useState<SearchResult[]>([]);
+  const [results, setResults] = useState<SearchResult>({});
   const [showLogs, setShowLogs] = useState(false);
+  const [expandLogs, setExpandLogs] = useState(false);
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const logsEndRef = useRef<HTMLDivElement>(null);
 
-  
   // Set dark mode by default
   useEffect(() => {
     setDarkMode(true);
@@ -218,6 +152,7 @@ export default function SearchInterface() {
     setAgentReport('');
     setLogs([]);
     setShowLogs(true);
+    setShareUrl(null);
     
     addLog(`Starting search for query: "${query.trim()}"`, 'info');
     
@@ -258,7 +193,7 @@ export default function SearchInterface() {
         addLog(`Search complete - no matching accounts or casts found`, 'warning');
       }
       
-      setResults(data.results || { accounts: [], casts: [] });
+      setResults(data || { results: { accounts: [], casts: [] } });
       setIsSearching(false);
       setIsCompleted(true);
       
@@ -356,6 +291,12 @@ export default function SearchInterface() {
     setDarkMode(!darkMode);
   };
 
+  // Handle successful share
+  const handleShareSuccess = (url: string) => {
+    setShareUrl(url);
+    addLog('Share URL created and copied to clipboard', 'success');
+  };
+
   // Get dynamic background and text colors based on theme
   const bgColor = darkMode ? 'bg-[#0a1020]' : 'bg-[#f5f7fa]';
   const cardBg = darkMode ? 'bg-[#121620]' : 'bg-white';
@@ -451,7 +392,7 @@ export default function SearchInterface() {
             {isSearching ? (
               <>
                 <span className="w-2 h-2 bg-blue-500 rounded-full mr-2 animate-pulse"></span>
-                <span>Scanning builders...</span>
+                <span>Searching...</span>
               </>
             ) : isAgentProcessing ? (
               <>
@@ -471,10 +412,11 @@ export default function SearchInterface() {
             )}
           </div>
           
-          {/* Integrated logs section - in dropdown */}
+          {/* Improved logs section - more minimal */}
           {logs.length > 0 && showLogs && (
-            <div className={`mt-3 ${darkMode ? 'bg-[#1a2030]' : 'bg-gray-50'} rounded-md p-3 max-h-32 overflow-y-auto font-mono text-xs`}>
-              {logs.map((log, index) => {
+            <div className={`mt-3 ${darkMode ? 'bg-[#1a2030]' : 'bg-gray-50'} rounded-md p-3 font-mono text-xs`}>
+              {/* Show just the most recent log, or all if expanded */}
+              {(expandLogs ? logs : logs.slice(-1)).map((log, index) => {
                 let logColor;
                 let logIcon;
                 
@@ -504,6 +446,26 @@ export default function SearchInterface() {
                   </div>
                 );
               })}
+              
+              {/* Toggle for showing more logs */}
+              {logs.length > 1 && (
+                <div className="mt-1 flex justify-between items-center">
+                  <button 
+                    onClick={() => setExpandLogs(!expandLogs)}
+                    className={`text-xs ${darkMode ? 'text-blue-300 hover:text-blue-200' : 'text-blue-600 hover:text-blue-500'} transition-colors focus:outline-none`}
+                  >
+                    {expandLogs ? 'Show less' : `+${logs.length - 1} more`}
+                  </button>
+                  
+                  <button 
+                    onClick={() => setShowLogs(false)}
+                    className={`text-xs ${darkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-400'} transition-colors focus:outline-none`}
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
+              
               <div ref={logsEndRef} />
             </div>
           )}
@@ -515,6 +477,18 @@ export default function SearchInterface() {
             report={agentReport}
             darkMode={darkMode}
             isLoading={isAgentProcessing && !agentReport}
+          />
+        )}
+        
+        {/* Share Button */}
+        {agentReport && !isAgentProcessing && (
+          <ShareButton 
+            query={query}
+            results={results}
+            agentReport={agentReport}
+            onShareSuccess={handleShareSuccess}
+            darkMode={darkMode}
+            shareUrl={shareUrl}
           />
         )}
       </main>

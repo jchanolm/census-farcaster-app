@@ -10,12 +10,14 @@ function formatPrompt(query: string, results: any) {
   // Preprocess cast data to handle any missing fields
   const processedCasts = casts.map(cast => ({
     username: cast.username || 'unknown',
-    castContent: cast.castContent || '',
+    castContent: cast.text || cast.castContent || '',
     likesCount: cast.likesCount || 0,
     timestamp: cast.timestamp || '',
     mentionedChannels: cast.mentionedChannels || [],
     mentionedUsers: cast.mentionedUsers || [],
-    relevanceScore: cast.relevanceScore || 0
+    relevanceScore: cast.relevanceScore || cast.score || 0,
+    castUrl: cast.castUrl || '',
+    authorProfileUrl: cast.authorProfileUrl || `https://warpcast.com/${cast.username}`
   }));
   
   // Sort casts by relevance score for better analysis
@@ -27,7 +29,8 @@ function formatPrompt(query: string, results: any) {
     bio: account.bio || '',
     followerCount: account.followerCount || 0,
     fcCred: account.fcCred || account.fcCredScore || 0,
-    relevanceScore: account.relevanceScore || 0
+    relevanceScore: account.relevanceScore || account.score || 0,
+    profileUrl: account.profileUrl || `https://warpcast.com/${account.username}`
   }));
   
   // Sort accounts by relevance score
@@ -49,8 +52,9 @@ The search results contain two main sections:
 These are Farcaster user profiles matching the search query.
 - username: Farcaster handle
 - bio: Profile description
-- fcCredScore/fcCred: Credibility score (1000=good, 5000=great, 10000=exceptional)
+- fcCred: Credibility score based on engagement from OG accounts (1000=good, 5000=great, 10000=exceptional)
 - followerCount: Number of followers
+- profileUrl: The URL to the user's Farcaster profile
 
 ## CASTS (${sortedCasts.length} results)
 These are individual posts by Farcaster users matching the search query.
@@ -60,6 +64,8 @@ These are individual posts by Farcaster users matching the search query.
 - timestamp: When the post was created
 - mentionedChannels: Any channels mentioned in the post
 - mentionedUsers: Users mentioned in the post
+- castUrl: The URL to view the specific cast
+- authorProfileUrl: The URL to the author's Farcaster profile
 
 # RESPONSE GUIDELINES
 ## Understanding User Intent
@@ -76,6 +82,13 @@ These are individual posts by Farcaster users matching the search query.
 - Highlight timely and emerging information
 - For hiring/recruiting queries: Only suggest people who would be new additions to the team, not existing team members
 
+## Linking Rules (EXTREMELY IMPORTANT)
+- ALWAYS link usernames to their profile URLs. For example, when mentioning a builder named "alex", format it as [alex](https://warpcast.com/alex)
+- NEVER mention a builder without linking to their profile
+- When quoting a cast, always end with a link to the cast URL. For example: > This is a quote from a cast [View cast](https://warpcast.com/username/hash)
+- Every builder or project mentioned MUST have their username linked to their profileUrl
+- Check that every username mentioned in your report has a proper link to their profile
+
 ## Tone & Style
 - Write with precision and confidence
 - Use clear, direct language without hedging or uncertainty
@@ -91,20 +104,18 @@ These are individual posts by Farcaster users matching the search query.
    - Concise overview of key findings directly addressing the query
    - 2-3 most significant insights with immediate relevance
    
-2. **Notable Builders & Projects**
+2. **Notable Builders & Projects & Concepts**
    - Try to include between 5-10 builders & projects
    - For each builder/project:
      - Clear relevance to the query
      - Specific contributions or expertise
      - Supporting evidence from bio or casts
      - Current focus and notable connections
+     - ALWAYS include a link to their profile URL using [$username](profileUrl) format
+     - ALWAYS include a link to casts cited using [cast](castUrl) format
    - Focus on unique information not already covered in Key Findings
    - For hiring/recruiting queries: Only include external candidates who are not already part of the organization
    
-3. **Strategic Implications** (when appropriate and relevant to user's request)
-   - Actionable takeaways
-   - Emerging opportunities
-   - Potential challenges or considerations
 
 # IMPORTANT
 - Ensure Key Findings and Notable Builders sections contain distinct information without redundancy
@@ -112,9 +123,11 @@ These are individual posts by Farcaster users matching the search query.
 - Never include meta-commentary about data limitations, analysis process, or caveats
 - If limited data matches the query, provide the best possible analysis with available information without mentioning the limitation
 - Stay strictly on task to the user's request
+- Don't cite followers/fcCred in response
 - Analyze all available data in your response
 - For hiring/recruiting queries: Never suggest people who are already part of the organization mentioned in the query
 - Be logical and practical - if someone is asking about hiring, they want to find new people to hire, not people already on their team
+- MOST IMPORTANT: Every builder mentioned must have their username linked to their profile URL
 
 # MARKDOWN FORMATTING
 - Use ## for main sections and ### for subsections
@@ -122,9 +135,10 @@ These are individual posts by Farcaster users matching the search query.
 - Use bullet lists for related points and supporting evidence
 - Use > blockquotes for direct quotes from casts
 - Use horizontal rules (---) to separate major sections
-- Format links as [Username](https://warpcast.com/username)
-- Link to specific casts as [View cast](https://warpcast.com/username/hash)
+- Format links to profiles as [Username](profileUrl)
+- Link to specific casts as [View cast](castUrl)
 - Maintain consistent formatting throughout
+- CRITICALLY IMPORTANT: Every builder or user mentioned MUST be linked to their profile URL
 
 # ACCOUNTS DATA (${sortedAccounts.length} PROFILES)
 ${JSON.stringify(sortedAccounts, null, 2)}
@@ -136,7 +150,7 @@ ${JSON.stringify(sortedCasts, null, 2)}
 
 export async function POST(request: Request) {
   try {
-    console.log('Agent API: Request received');
+    console.log('Agent API: Request received!');
     const { originalQuery, query, results } = await request.json();
     
     if (!query || !results) {
@@ -147,8 +161,9 @@ export async function POST(request: Request) {
     // Log structured data format
     const accountsCount = results.accounts?.length || 0;
     const castsCount = results.casts?.length || 0;
+    const vectorMatchesCount = results.stats?.vectorResultsCount || 0;
     
-    console.log(`Agent API: Processing ${accountsCount} accounts and ${castsCount} casts for query: "${query}"`);
+    console.log(`Agent API: Processing ${accountsCount} accounts and ${castsCount} casts (${vectorMatchesCount} from vector search) for query: "${query}"`);
     
     // Format the prompt for the model using the original or processed query
     const prompt = formatPrompt(originalQuery || query, results);
