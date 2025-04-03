@@ -128,6 +128,7 @@ The search results are organized into two sections:
 2. **Analysis Principles**
    - Base every conclusion on the provided data; cite evidence from bios or casts.
    - Do not stretch/contrive/make leaps of logic. 
+   - Emphasize information from casts in your analysis; direct quotes are preferred  
    - Emphasize high-engagement users and timely information.
    - Identify notable patterns or connections across multiple sources.
    - Avoid speculation; stay factual and relevant.
@@ -148,7 +149,7 @@ The search results are organized into two sections:
    1. **Executive Summary**  
       - High-level overview (2-3 key findings addressing the query).
    2. **Notable Builders & Projects & Concepts**  
-      - Mention 5-15 relevant builders or projects.
+      - Mention 5-10 relevant builders or projects.
       - Include specific evidence, expertise, and connections to the query.
       - Link to their profile using \`[username](profileUrl)\`.
       - If referencing a cast, link to it with \`[View cast](castUrl)\`.
