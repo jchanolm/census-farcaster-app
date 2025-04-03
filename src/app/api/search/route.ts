@@ -92,12 +92,13 @@ export async function POST(request: Request) {
 // Improve cast search query
 CALL db.index.vector.queryNodes('castsEmbeddings', 250, $queryEmbedding) YIELD node as castNode, score as vectorScore 
 WHERE vectorScore > 0.75  // Increase the similarity threshold
+MATCH (node)-[]-(real:RealAssNigga:Account)
 WITH 
   castNode.author as username,
   "https://warpcast.com/" + castNode.author as authorProfileUrl,
-  NULL as bio,
-  NULL as followerCount,
-  NULL as fcCred,
+  real.bio as bio,
+  real.followerCount as followerCount,
+  real.fcCred as fcCred,
   NULL as state,
   NULL as city,
   NULL as country,
@@ -111,7 +112,7 @@ WITH
   // Normalize the vector score to reduce the impact of engagement metrics
   vectorScore * 0.8 + (CASE WHEN castNode.likesCount < 50 THEN 0.2 ELSE 0) END as score,
   'cast_match' as matchType
-  
+
 WHERE castContent IS NOT NULL
     UNION ALL
 
