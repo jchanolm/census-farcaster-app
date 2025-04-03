@@ -115,7 +115,7 @@ export async function POST(request: Request) {
     UNION ALL
 
     // Cast search with vector similarity using embeddings
-    CALL db.index.vector.queryNodes('castsEmbeddings', 200, $queryEmbedding) YIELD node as castNode, score as score 
+    CALL db.index.vector.queryNodes('castsEmbeddings', 250, $queryEmbedding) YIELD node as castNode, score as score 
     WHERE score > 0.71
     WITH 
       castNode.author as username,
