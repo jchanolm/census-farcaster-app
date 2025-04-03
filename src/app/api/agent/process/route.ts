@@ -82,6 +82,7 @@ These are individual posts by Farcaster users matching the search query.
 - Identify patterns and connections across multiple sources
 - Highlight timely and emerging information
 - For hiring/recruiting queries: Only suggest people who would be new additions to the team, not existing team members
+- NO COMMENTARY ON RESULTS BEING LIMITED. JUST DELIVER THE RESULTS.
 
 ## Linking Rules (EXTREMELY IMPORTANT)
 - ALWAYS link usernames to their profile URLs. For example, when mentioning a builder named "alex", format it as [alex](https://warpcast.com/alex)
