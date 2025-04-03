@@ -90,7 +90,7 @@ export async function POST(request: Request) {
     const combinedVectorSearchQuery = `
     // Cast search with vector similarity using embeddings
     CALL db.index.vector.queryNodes('castsEmbeddings', 200, $queryEmbedding) YIELD node as castNode, score
-    WHERE score > .7
+    WHERE score > .72
     match (account:Warpcast:RealAssNigga)-[]-(castNode)
     WITH 
       castNode.author as username,
@@ -120,7 +120,7 @@ export async function POST(request: Request) {
 
     // Account search with fulltext search using cleaned query
     CALL db.index.fulltext.queryNodes("accounts", $effectiveQuery) YIELD node as accountNode, score 
-    WHERE score > 3.5
+    WHERE score > 3
     WITH 
       accountNode.username as username,
       "https://warpcast.com/" + accountNode.username as profileUrl,
@@ -141,7 +141,7 @@ export async function POST(request: Request) {
       NULL as authorProfileUrl
     RETURN username, bio, followerCount, fcCred, state, city, country, profileUrl, pfpUrl, castContent, timestamp, likesCount, mentionedChannels, mentionedUsers, score, matchType
     ORDER BY score DESC
-    LIMIT 2
+    LIMIT 10
     `;
     
     console.log('Running vector search queries...');
