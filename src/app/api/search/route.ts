@@ -18,9 +18,12 @@ const openai = new OpenAI({
  */
 async function generateEmbedding(text: string) {
   try {
+    // Clean the text by removing problematic characters before embedding
+    const cleanedText = text.replace(/[\/\-\\]/g, ' ').trim();
+    
     const embedding = await openai.embeddings.create({
       model: "BAAI/bge-m3",
-      input: text,
+      input: cleanedText,
       encoding_format: "float",
     });
     
@@ -55,13 +58,15 @@ export async function POST(request: Request) {
     // Remove stopwords from the query to improve search quality
     const stopwords = [
       'a', 'an', 'and', 'are', 'as', 'at', 'be', 'but', 'by', 'for', 'if', 'in', 
-      'into', 'is', 'it', 'no', 'not', 'of', 'on', 'or', 'such', 'that', 'the', 'farcaster',
-      'their', 'then', 'there', 'these', '/', '-',  'they', 'this', 'to', 'was', 'will', 'with'
+      'into', 'is', 'it', 'no', 'not', 'of', 'on', 'or', 'such', 'that', 'the',
+      'their', 'then', 'there', 'these', 'they', 'this', 'to', 'was', 'will', 'with'
     ];
     
     // Split the query into words, filter out stopwords, and rejoin
+    // Also remove problematic characters like /, -, etc.
     const cleanedQuery = originalQuery
       .toLowerCase()
+      .replace(/[\/\-\\]/g, ' ')
       .split(/\s+/)
       .filter(word => !stopwords.includes(word))
       .join(' ');
@@ -69,7 +74,7 @@ export async function POST(request: Request) {
     console.log(`Query after stopword removal: ${cleanedQuery || originalQuery}`);
     
     // Use the original query if all words were stopwords
-    const effectiveQuery = cleanedQuery || originalQuery;
+    const effectiveQuery = cleanedQuery || originalQuery.replace(/[\/\-\\]/g, ' ');
     // Step 1: Generate embedding for the query using BAAI/bge-m3
     console.log('Generating embedding for query using BAAI/bge-m3...');
     const queryEmbedding = await generateEmbedding(originalQuery);
