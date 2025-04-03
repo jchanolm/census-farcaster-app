@@ -116,7 +116,7 @@ export async function POST(request: Request) {
 
     // Cast search with vector similarity using embeddings
     CALL db.index.vector.queryNodes('castsEmbeddings', 250, $queryEmbedding) YIELD node as castNode, score as score 
-    WHERE score > 0.71
+    WHERE score > 0.7
     WITH 
       castNode.author as username,
       "https://warpcast.com/" + castNode.author as authorProfileUrl,
