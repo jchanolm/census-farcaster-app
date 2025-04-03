@@ -4,8 +4,8 @@ import { useState, useRef, useEffect } from 'react';
 import { sdk } from '@farcaster/frame-sdk';
 import AddFrameButton from '@/components/AddFrameButton';
 import SidekickBanner from '@/components/SidekickBanner';
-import AgentReport from '@/components/AgentReport';
-import ShareButton from '@/components/ShareButton';
+import AgentReport from './AgentReport';
+import ShareButton from './ShareButton';
 
 type LogEntry = {
   message: string;
