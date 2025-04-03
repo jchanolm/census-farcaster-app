@@ -128,6 +128,7 @@ These are individual posts by Farcaster users matching the search query.
 - Analyze all available data in your response
 - For hiring/recruiting queries: Never suggest people who are already part of the organization mentioned in the query
 - Be logical and practical - if someone is asking about hiring, they want to find new people to hire, not people already on their team
+- Do not include next steps or other unsolicited analysis.
 - MOST IMPORTANT: Every builder mentioned must have their username linked to their profile URL
 
 # MARKDOWN FORMATTING
