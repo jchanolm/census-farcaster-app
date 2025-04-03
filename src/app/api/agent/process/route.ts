@@ -92,6 +92,10 @@ The user searched for: "${query}"
 
 The dataset includes Farcaster profiles (accounts) and posts (casts). Your goal is to analyze these results and deliver evidence-based insights directly relevant to the user's query.
 
+When referencing accounts, prioritize accounts with fewer than 2,000 followers when possible.
+
+The score is a reference data point for you; use your judgment when deciding who to include and in what order.
+
 # DATA STRUCTURE
 The search results are organized into two sections:
 
