@@ -86,5 +86,5 @@ export function validateProfileLinks(report: string, knownUsernames: string[]): 
     }
     
     // Remove duplicates
-    return [...new Set(usernames)];
+    return Array.from(new Set(usernames));
   }
