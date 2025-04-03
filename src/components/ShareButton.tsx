@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface ShareButtonProps {
   query: string;
@@ -20,6 +20,7 @@ export default function ShareButton({
   shareUrl
 }: ShareButtonProps) {
   const [isSharing, setIsSharing] = useState(false);
+  const [showCopyConfirmation, setShowCopyConfirmation] = useState(false);
   
   // Create shareable URL
   const handleShare = async () => {
@@ -57,6 +58,14 @@ export default function ShareButton({
       console.error('Share error:', error);
     } finally {
       setIsSharing(false);
+    }
+  };
+
+  const handleCopyToClipboard = async () => {
+    if (shareUrl) {
+      await navigator.clipboard.writeText(shareUrl);
+      setShowCopyConfirmation(true);
+      setTimeout(() => setShowCopyConfirmation(false), 2000);
     }
   };
   
@@ -98,17 +107,22 @@ export default function ShareButton({
             {shareUrl}
           </div>
           <div className="flex items-center space-x-2">
-            <button
-              onClick={async () => {
-                await navigator.clipboard.writeText(shareUrl);
-              }}
-              className={`p-2 ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200'} rounded transition-colors tooltip`}
-              title="Copy to clipboard"
-            >
-              <svg className="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-              </svg>
-            </button>
+            <div className="relative">
+              <button
+                onClick={handleCopyToClipboard}
+                className={`p-2 ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200'} rounded transition-colors tooltip`}
+                title="Copy to clipboard"
+              >
+                <svg className="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                </svg>
+              </button>
+              {showCopyConfirmation && (
+                <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-green-500 text-white text-xs py-1 px-2 rounded shadow-md animate-fade-in-out">
+                  Copied!
+                </div>
+              )}
+            </div>
             <button
               onClick={() => {
                 window.open(shareUrl, '_blank');
