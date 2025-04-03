@@ -89,33 +89,30 @@ export async function POST(request: Request) {
     // Step 2: Use vector search with separate queries for accounts and casts
     const combinedVectorSearchQuery = `
     // Cast search with vector similarity using embeddings
-    CALL db.index.vector.queryNodes('castsEmbeddings', 200, $queryEmbedding) YIELD node as castNode, score
-    WHERE score > .72
-    match (account:Warpcast:RealAssNigga)-[]-(castNode)
-    WITH 
-      castNode.author as username,
-      "https://warpcast.com/" + castNode.author as authorProfileUrl,
-      account.followerCount as followerCount,
-      account.bio as bio,
-      account.ogInteractionsCount as fcCred,
-      castNode.text as castContent,
-      "https://warpcast.com/" + castNode.author + "/" + castNode.hash as castUrl,
-      castNode.timestamp as timestamp,
-      account.state as state,
-      account.city as city,
-      account.country as country,
-      castNode.likesCount as likesCount,
-      castNode.mentionedChannels as mentionedChannels,
-      castNode.mentionedUsers as mentionedUsers,
-      score,
-      avg(score) * sum(score) as scorecof, 
-      'cast_match' as matchType,
-      NULL as profileUrl,
-      NULL as pfpUrl
-    WHERE castContent IS NOT NULL
-    RETURN username, bio, followerCount, fcCred, state, city, country, profileUrl, pfpUrl, castContent, timestamp, likesCount, mentionedChannels, mentionedUsers, score, matchType
-    ORDER BY scorecof DESC
-
+// Improve cast search query
+CALL db.index.vector.queryNodes('castsEmbeddings', 250, $queryEmbedding) YIELD node as castNode, score as vectorScore 
+WHERE vectorScore > 0.75  // Increase the similarity threshold
+WITH 
+  castNode.author as username,
+  "https://warpcast.com/" + castNode.author as authorProfileUrl,
+  NULL as bio,
+  NULL as followerCount,
+  NULL as fcCred,
+  NULL as state,
+  NULL as city,
+  NULL as country,
+  NULL as pfpUrl,
+  castNode.text as castContent,
+  "https://warpcast.com/" + castNode.author + "/" + castNode.hash as castUrl,
+  castNode.timestamp as timestamp,
+  castNode.likesCount as likesCount,
+  castNode.mentionedChannels as mentionedChannels,
+  castNode.mentionedUsers as mentionedUsers,
+  // Normalize the vector score to reduce the impact of engagement metrics
+  vectorScore * 0.8 + (CASE WHEN castNode.likesCount < 50 THEN 0.2 ELSE 0) END as score,
+  'cast_match' as matchType
+  
+WHERE castContent IS NOT NULL
     UNION ALL
 
     // Account search with fulltext search using cleaned query
