@@ -141,7 +141,7 @@ ${JSON.stringify(sortedCasts, null, 2)}
 
 export async function POST(request: Request) {
   try {
-    console.log('Agent API: Request received');
+    console.log('Agent API: Request received!');
     const { originalQuery, query, results } = await request.json();
     
     if (!query || !results) {
