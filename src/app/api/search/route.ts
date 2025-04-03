@@ -89,36 +89,36 @@ export async function POST(request: Request) {
     // Step 2: Use vector search with separate queries for accounts and casts
     const combinedVectorSearchQuery = `
     // Cast search with vector similarity using embeddings
-// Improve cast search query
-CALL db.index.vector.queryNodes('castsEmbeddings', 250, $queryEmbedding) YIELD node as castNode, score as vectorScore 
-WHERE vectorScore > 0.75  // Increase the similarity threshold
-MATCH (node)-[]-(real:RealAssNigga:Account)
-WITH 
-  castNode.author as username,
-  "https://warpcast.com/" + castNode.author as authorProfileUrl,
-  real.bio as bio,
-  real.followerCount as followerCount,
-  real.fcCred as fcCred,
-  NULL as state,
-  NULL as city,
-  NULL as country,
-  NULL as pfpUrl,
-  castNode.text as castContent,
-  "https://warpcast.com/" + castNode.author + "/" + castNode.hash as castUrl,
-  castNode.timestamp as timestamp,
-  castNode.likesCount as likesCount,
-  castNode.mentionedChannels as mentionedChannels,
-  castNode.mentionedUsers as mentionedUsers,
-  // Normalize the vector score to reduce the impact of engagement metrics
-  vectorScore * 0.8 + (CASE WHEN castNode.likesCount < 50 THEN 0.2 ELSE 0) END as score,
-  'cast_match' as matchType
+    CALL db.index.vector.queryNodes('castsEmbeddings', 250, $queryEmbedding) YIELD node as castNode, score as score 
+    MATCH (castNode)-[]-(real:RealAssNigga:Account)
+    WHERE score > 0.72
+    WITH 
+      castNode.author as username,
+      "https://warpcast.com/" + castNode.author as authorProfileUrl,
+      real.bio as bio,
+      real.followerCount as followerCount,
+      real.fcCred as fcCred,
+      real.state as state,
+      real.city as city,
+      real.country as country,
+      NULL as pfpUrl,
+      castNode.text as castContent,
+      "https://warpcast.com/" + castNode.author + "/" + castNode.hash as castUrl,
+      castNode.timestamp as timestamp,
+      castNode.likesCount as likesCount,
+      castNode.mentionedChannels as mentionedChannels,
+      castNode.mentionedUsers as mentionedUsers,
+      score,
+      'cast_match' as matchType
+    WHERE castContent IS NOT NULL
+    RETURN username, bio, followerCount, fcCred, state, city, country, pfpUrl, castContent, timestamp, likesCount, mentionedChannels, mentionedUsers, score, matchType
+    ORDER BY score DESC
 
-WHERE castContent IS NOT NULL
     UNION ALL
 
     // Account search with fulltext search using cleaned query
     CALL db.index.fulltext.queryNodes("accounts", $effectiveQuery) YIELD node as accountNode, score 
-    WHERE score > 3
+    WHERE score > 3.5
     WITH 
       accountNode.username as username,
       "https://warpcast.com/" + accountNode.username as profileUrl,
@@ -135,11 +135,10 @@ WHERE castContent IS NOT NULL
       NULL as mentionedChannels,
       NULL as mentionedUsers,
       score,
-      'account_match' as matchType,
-      NULL as authorProfileUrl
-    RETURN username, bio, followerCount, fcCred, state, city, country, profileUrl, pfpUrl, castContent, timestamp, likesCount, mentionedChannels, mentionedUsers, score, matchType
+      'account_match' as matchType
+    RETURN username, bio, followerCount, fcCred, state, city, country, pfpUrl, castContent, timestamp, likesCount, mentionedChannels, mentionedUsers, score, matchType
     ORDER BY score DESC
-    LIMIT 10
+    LIMIT 5
     `;
     
     console.log('Running vector search queries...');
