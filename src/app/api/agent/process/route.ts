@@ -127,6 +127,7 @@ The search results are organized into two sections:
 
 2. **Analysis Principles**
    - Base every conclusion on the provided data; cite evidence from bios or casts.
+   - Do not stretch/contrive/make leaps of logic. 
    - Emphasize high-engagement users and timely information.
    - Identify notable patterns or connections across multiple sources.
    - Avoid speculation; stay factual and relevant.
