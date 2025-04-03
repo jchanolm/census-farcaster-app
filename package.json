@@ -13,6 +13,7 @@
     "@farcaster/frame-sdk": "^0.0.31",
     "@farcaster/frame-wagmi-connector": "^0.0.19",
     "@privy-io/react-auth": "^2.7.2",
+    "@vercel/analytics": "^1.5.0",
     "crypto": "^1.0.1",
     "highlight.js": "^11.11.1",
     "marked": "^15.0.7",

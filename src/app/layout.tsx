@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import { Analytics } from "@vercel/analytics/react";
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -24,6 +25,7 @@ export default function RootLayout({
           <img src="/icon.png" alt="Quotient Icon" className="h-8 w-auto" />
         </div>
         {children}
+        <Analytics />
       </body>
     </html>
   );
