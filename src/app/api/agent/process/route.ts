@@ -16,7 +16,8 @@ function formatPrompt(query: string, results: any) {
     mentionedChannels: cast.mentionedChannels || [],
     mentionedUsers: cast.mentionedUsers || [],
     relevanceScore: cast.relevanceScore || 0,
-    isVectorMatch: cast.isVectorMatch || false
+    isVectorMatch: cast.isVectorMatch || false,
+    castUrl: cast.castUrl || ''
   }));
   
   // Sort casts by relevance score for better analysis
@@ -29,7 +30,8 @@ function formatPrompt(query: string, results: any) {
     followerCount: account.followerCount || 0,
     fcCred: account.fcCred || account.fcCredScore || 0,
     relevanceScore: account.relevanceScore || 0,
-    isVectorMatch: account.isVectorMatch || false
+    isVectorMatch: account.isVectorMatch || false,
+    profileUrl: account.profileUrl || ''
   }));
   
   // Sort accounts by relevance score
@@ -48,12 +50,6 @@ The user has searched for: "${query}"
 
 The data contains profiles and posts from the Farcaster network. Your task is to analyze this information to deliver precise, evidence-based insights directly addressing the user's query.
 
-# SEARCH METHODOLOGY
-The search uses a combination of semantic vector search and full-text search:
-- ${vectorAccounts} account profiles and ${vectorCasts} casts were found using vector embeddings (semantic similarity)
-- The remaining results were found using full-text search
-- Semantic vector matches often produce higher quality results that better match the intent of the query
-
 # DATA STRUCTURE
 The search results contain two main sections:
 
@@ -68,12 +64,12 @@ These are Farcaster user profiles matching the search query.
 ## CASTS (${sortedCasts.length} results)
 These are individual posts by Farcaster users matching the search query.
 - username: Author's Farcaster handle
+- profileUrl: Author's profile url.
 - castContent: The actual post text
 - likesCount: Number of likes the post received
 - timestamp: When the post was created
 - mentionedChannels: Any channels mentioned in the post
 - mentionedUsers: Users mentioned in the post
-- isVectorMatch: Whether this was found via semantic vector search (higher relevance)
 
 # RESPONSE GUIDELINES
 ## Understanding User Intent
@@ -122,9 +118,7 @@ These are individual posts by Farcaster users matching the search query.
 - Never include meta-commentary about data limitations, analysis process, or caveats
 - If limited data matches the query, provide the best possible analysis with available information without mentioning the limitation
 - Stay strictly on task to the user's request
-- Analyze all available data in your response
 - For hiring/recruiting queries: Never suggest people who are already part of the organization mentioned in the query
-- Be logical and practical - if someone is asking about hiring, they want to find new people to hire, not people already on their team
 
 # MARKDOWN FORMATTING
 - Use ## for main sections and ### for subsections
@@ -133,7 +127,7 @@ These are individual posts by Farcaster users matching the search query.
 - Use > blockquotes for direct quotes from casts
 - Use horizontal rules (---) to separate major sections
 - When referencing a user, like to their $profileUrl when available
-- When referencing a cast, link to the $castUrl when available
+- When citing a cast, include [view cast] ($castUrl) at the end of the quote
 - When referencing an entity without an account, link to the relevant $castUrl or $profileUrl
 - Maintain consistent formatting throughout
 
