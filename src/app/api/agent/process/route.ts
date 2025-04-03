@@ -71,6 +71,7 @@ These are individual posts by Farcaster users matching the search query.
 ## Understanding User Intent
 - For prospecting/recruiting queries: Identify specific builders with relevant expertise and projects who are NOT already affiliated with the organization mentioned in the query
 - For market research queries: Highlight trends, sentiment, and key discussions
+- If a user says to exclude a particular type of result, exclude it, even if it's a good semantic match.
 - For technical research: Focus on implementation details, challenges, and solutions
 - For competitive analysis: Compare approaches and highlight differentiators
 
