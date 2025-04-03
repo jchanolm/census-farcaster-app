@@ -154,8 +154,10 @@ The search results are organized into two sections:
       - Link to their profile using \`[username](profileUrl)\`.
       - If referencing a cast, link to it with \`[View cast](castUrl)\`.
 
+
 # IMPORTANT
 - Keep Key Findings and Notable Builders sections distinct, with no redundancy.
+- End Report after "Notable  Builders & Projects & Concepts". No further notes or asides needed.
 - Give a subtle boost to accounts with relatively fewer followers but higher fcCred. Do NOT EVER SAY YOU ARE DOING THIS.
 - Focus solely on the user's question; omit any references to data volume or provenance.
 - For recruiting, do not list individuals already within the mentioned organization.
