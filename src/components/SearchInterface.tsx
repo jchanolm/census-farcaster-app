@@ -21,6 +21,7 @@ type SearchResult = {
     accounts?: {
       username: string;
       displayName?: string;
+      profileUrl: string; 
       pfp?: string;
       bio?: string;
       followerCount?: number;
@@ -35,13 +36,13 @@ type SearchResult = {
     casts?: {
       username: string;
       displayName?: string;
+      castUrl: string; 
+      authorProfileUrl: string; 
       pfp?: string;
       text: string;
       timestamp?: string;
       totalScore?: number;
       textScore?: number;
-      usernameScore?: number;
-      displayNameScore?: number;
       [key: string]: any;
     }[];
   };

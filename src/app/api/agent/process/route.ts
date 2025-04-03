@@ -126,9 +126,9 @@ These are individual posts by Farcaster users matching the search query.
 - Use bullet lists for related points and supporting evidence
 - Use > blockquotes for direct quotes from casts
 - Use horizontal rules (---) to separate major sections
-- When referencing a user, like to their $profileUrl when available
-- When citing a cast, include [view cast] ($castUrl) at the end of the quote
-- When referencing an entity without an account, link to the relevant $castUrl or $profileUrl
+- When referencing a user, always hyperlink to their profileUrl like this: [username](profileUrl)
+- When citing a cast, include [view cast](castUrl) at the end of the quote
+- When referencing an entity without an account, link to the relevant castUrl or profileUrl
 - Maintain consistent formatting throughout
 
 # ACCOUNTS DATA (${sortedAccounts.length} PROFILES)
