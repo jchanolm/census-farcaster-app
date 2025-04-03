@@ -2,39 +2,86 @@ import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
+// Compute a combined score that gives weight to relevance, fcCred, and inverse follower count
+function computeCombinedScore({
+  relevanceScore = 0,
+  fcCred = 0,
+  followerCount = 0
+}) {
+  // Avoid division by zero
+  const invFollower = followerCount > 0 ? 1 / followerCount : 1;
+  // Example weighting:
+  return (0.5 * relevanceScore) + (0.3 * fcCred) + (0.2 * invFollower);
+}
+
 // Format the data for the AI prompt
 function formatPrompt(query: string, results: any) {
   // Ensure results structure exists with defaults
   const { accounts = [], casts = [] } = results;
   
-  // Preprocess cast data to handle any missing fields
-  const processedCasts = casts.map(cast => ({
-    username: cast.username || 'unknown',
-    castContent: cast.text || cast.castContent || '',
-    likesCount: cast.likesCount || 0,
-    timestamp: cast.timestamp || '',
-    mentionedChannels: cast.mentionedChannels || [],
-    mentionedUsers: cast.mentionedUsers || [],
-    relevanceScore: cast.relevanceScore || cast.score || 0,
-    castUrl: cast.castUrl || '',
-    authorProfileUrl: cast.authorProfileUrl || `https://warpcast.com/${cast.username}`
-  }));
-  
-  // Sort casts by relevance score for better analysis
-  const sortedCasts = processedCasts.sort((a, b) => b.relevanceScore - a.relevanceScore);
-  
   // Preprocess account data
-  const processedAccounts = accounts.map(account => ({
-    username: account.username || 'unknown',
-    bio: account.bio || '',
-    followerCount: account.followerCount || 0,
-    fcCred: account.fcCred || account.fcCredScore || 0,
-    relevanceScore: account.relevanceScore || account.score || 0,
-    profileUrl: account.profileUrl || `https://warpcast.com/${account.username}`
-  }));
+  const processedAccounts = accounts.map(account => {
+    const username = account.username || 'unknown';
+    const bio = account.bio || '';
+    const followerCount = account.followerCount || 0;
+    const fcCred = account.fcCred || account.fcCredScore || 0;
+    const relevanceScore = account.relevanceScore || account.score || 0;
+    
+    // Compute the new combined score
+    const combinedScore = computeCombinedScore({ 
+      relevanceScore, 
+      fcCred, 
+      followerCount 
+    });
+    
+    return {
+      username,
+      bio,
+      followerCount,
+      fcCred,
+      relevanceScore,
+      combinedScore, // store it for reference
+      profileUrl: account.profileUrl || `https://warpcast.com/${username}`
+    };
+  });
   
-  // Sort accounts by relevance score
-  const sortedAccounts = processedAccounts.sort((a, b) => b.relevanceScore - a.relevanceScore);
+  // Sort accounts by combined score
+  const sortedAccounts = processedAccounts.sort((a, b) => b.combinedScore - a.combinedScore);
+  
+  // Preprocess cast data to handle any missing fields
+  const processedCasts = casts.map(cast => {
+    const username = cast.username || 'unknown';
+    const castContent = cast.text || cast.castContent || '';
+    const likesCount = cast.likesCount || 0;
+    const timestamp = cast.timestamp || '';
+    const mentionedChannels = cast.mentionedChannels || [];
+    const mentionedUsers = cast.mentionedUsers || [];
+    const relevanceScore = cast.relevanceScore || cast.score || 0;
+    const followerCount = 0; // or adapt if you store author's follower count
+    const fcCred = 0;       // or adapt if you store author's fcCred
+    
+    const combinedScore = computeCombinedScore({ 
+      relevanceScore, 
+      fcCred,
+      followerCount
+    });
+    
+    return {
+      username,
+      castContent,
+      likesCount,
+      timestamp,
+      mentionedChannels,
+      mentionedUsers,
+      relevanceScore,
+      combinedScore,
+      castUrl: cast.castUrl || '',
+      authorProfileUrl: cast.authorProfileUrl || `https://warpcast.com/${username}`
+    };
+  });
+  
+  // Sort casts by combined score for better analysis
+  const sortedCasts = processedCasts.sort((a, b) => b.combinedScore - a.combinedScore);
 
   return `
 # MISSION

@@ -88,35 +88,9 @@ export async function POST(request: Request) {
     
     // Step 2: Use vector search with separate queries for accounts and casts
     const combinedVectorSearchQuery = `
-    // Account search with fulltext search using cleaned query
-    CALL db.index.fulltext.queryNodes("accounts", $effectiveQuery) YIELD node as accountNode, score 
-    WHERE score > 3
-    WITH 
-      accountNode.username as username,
-      "https://warpcast.com/" + accountNode.username as profileUrl,
-      accountNode.bio as bio,
-      accountNode.followerCount as followerCount,
-      accountNode.ogInteractionsCount as fcCred,
-      accountNode.state as state,
-      accountNode.city as city,
-      accountNode.country as country,
-      accountNode.pfpUrl as pfpUrl,
-      NULL as castContent,
-      NULL as timestamp,
-      NULL as likesCount,
-      NULL as mentionedChannels,
-      NULL as mentionedUsers,
-      score,
-      'account_match' as matchType
-    RETURN username, bio, followerCount, fcCred, state, city, country, pfpUrl, castContent, timestamp, likesCount, mentionedChannels, mentionedUsers, score, matchType
-    ORDER BY score DESC
-    LIMIT 5
-
-    UNION ALL
-
     // Cast search with vector similarity using embeddings
     CALL db.index.vector.queryNodes('castsEmbeddings', 250, $queryEmbedding) YIELD node as castNode, score as score 
-    WHERE score > 0.7
+    WHERE score > 0.74
     WITH 
       castNode.author as username,
       "https://warpcast.com/" + castNode.author as authorProfileUrl,
@@ -138,6 +112,32 @@ export async function POST(request: Request) {
     WHERE castContent IS NOT NULL
     RETURN username, bio, followerCount, fcCred, state, city, country, pfpUrl, castContent, timestamp, likesCount, mentionedChannels, mentionedUsers, score, matchType
     ORDER BY score DESC
+
+    UNION ALL
+
+    // Account search with fulltext search using cleaned query
+    CALL db.index.fulltext.queryNodes("accounts", $effectiveQuery) YIELD node as accountNode, score 
+    WHERE score > 3.5
+    WITH 
+      accountNode.username as username,
+      "https://warpcast.com/" + accountNode.username as profileUrl,
+      accountNode.bio as bio,
+      accountNode.followerCount as followerCount,
+      accountNode.ogInteractionsCount as fcCred,
+      accountNode.state as state,
+      accountNode.city as city,
+      accountNode.country as country,
+      accountNode.pfpUrl as pfpUrl,
+      NULL as castContent,
+      NULL as timestamp,
+      NULL as likesCount,
+      NULL as mentionedChannels,
+      NULL as mentionedUsers,
+      score,
+      'account_match' as matchType
+    RETURN username, bio, followerCount, fcCred, state, city, country, pfpUrl, castContent, timestamp, likesCount, mentionedChannels, mentionedUsers, score, matchType
+    ORDER BY score DESC
+    LIMIT 2
     `;
     
     console.log('Running vector search queries...');
@@ -157,9 +157,30 @@ export async function POST(request: Request) {
       return plainObj;
     });
     
+    // Calculate combined score for each result
+    processedResults.forEach(item => {
+      // Default values if fields are missing
+      const score = item.score || 0;
+      const followerCount = Number(item.followerCount || 1);
+      const fcCred = Number(item.fcCred || 0);
+      
+      // Avoid dividing by zero
+      const invFollowerCount = (followerCount <= 0) ? 1 : (1 / followerCount);
+      
+      // Combine the scores with weighting
+      item.combinedScore = 0.5 * score + 
+                          0.3 * fcCred + 
+                          0.2 * invFollowerCount;
+    });
+    
     // Split into accounts and casts
-    const accountResults = processedResults.filter(item => item.matchType === 'account_match');
-    const castResults = processedResults.filter(item => item.matchType === 'cast_match');
+    const accountResults = processedResults
+      .filter(item => item.matchType === 'account_match')
+      .sort((a, b) => b.combinedScore - a.combinedScore);
+      
+    const castResults = processedResults
+      .filter(item => item.matchType === 'cast_match')
+      .sort((a, b) => b.combinedScore - a.combinedScore);
     
     console.log(`Found ${accountResults.length} account matches and ${castResults.length} cast matches`);
     
