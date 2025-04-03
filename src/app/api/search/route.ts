@@ -111,7 +111,7 @@ export async function POST(request: Request) {
       avg(score) * sum(score) as scorecof, 
       'cast_match' as matchType
     WHERE castContent IS NOT NULL
-    RETURN username, bio, followerCount, fcCred, state, city, country, pfpUrl, castContent, timestamp, likesCount, mentionedChannels, mentionedUsers, score, matchType
+    RETURN username, bio, followerCount, fcCred, state, city, country, castContent, timestamp, likesCount, mentionedChannels, mentionedUsers, score, matchType
     ORDER BY scorecof DESC
 
     UNION ALL
