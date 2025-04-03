@@ -72,7 +72,7 @@ function extractUsernames(results: SearchResult): string[] {
     });
   }
   
-  return [...new Set(usernames)];
+  return Array.from(new Set(usernames));
 }
 
 export default function SearchInterface() {
