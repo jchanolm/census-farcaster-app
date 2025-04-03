@@ -105,7 +105,7 @@ export async function POST(request: Request) {
       castNode.mentionedChannels as mentionedChannels,
       castNode.mentionedUsers as mentionedUsers,
       score,
-      avg(score) * sum(score) as scorecof 
+      avg(score) * sum(score) as scorecof, 
       'cast_match' as matchType
     WHERE castContent IS NOT NULL
     RETURN username, bio, followerCount, fcCred, state, city, country, pfpUrl, castContent, timestamp, likesCount, mentionedChannels, mentionedUsers, score, matchType
