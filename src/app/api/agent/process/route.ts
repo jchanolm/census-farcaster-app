@@ -10,14 +10,14 @@ function formatPrompt(query: string, results: any) {
   // Preprocess cast data to handle any missing fields
   const processedCasts = casts.map(cast => ({
     username: cast.username || 'unknown',
-    castContent: cast.castContent || '',
+    castContent: cast.text || cast.castContent || '',
     likesCount: cast.likesCount || 0,
     timestamp: cast.timestamp || '',
     mentionedChannels: cast.mentionedChannels || [],
     mentionedUsers: cast.mentionedUsers || [],
-    relevanceScore: cast.relevanceScore || 0,
-    isVectorMatch: cast.isVectorMatch || false,
-    castUrl: cast.castUrl || ''
+    relevanceScore: cast.relevanceScore || cast.score || 0,
+    castUrl: cast.castUrl || '',
+    authorProfileUrl: cast.authorProfileUrl || `https://warpcast.com/${cast.username}`
   }));
   
   // Sort casts by relevance score for better analysis
@@ -29,17 +29,12 @@ function formatPrompt(query: string, results: any) {
     bio: account.bio || '',
     followerCount: account.followerCount || 0,
     fcCred: account.fcCred || account.fcCredScore || 0,
-    relevanceScore: account.relevanceScore || 0,
-    isVectorMatch: account.isVectorMatch || false,
-    profileUrl: account.profileUrl || ''
+    relevanceScore: account.relevanceScore || account.score || 0,
+    profileUrl: account.profileUrl || `https://warpcast.com/${account.username}`
   }));
   
   // Sort accounts by relevance score
   const sortedAccounts = processedAccounts.sort((a, b) => b.relevanceScore - a.relevanceScore);
-
-  // Get counts of semantic search results vs full-text search
-  const vectorAccounts = sortedAccounts.filter(a => a.isVectorMatch).length;
-  const vectorCasts = sortedCasts.filter(c => c.isVectorMatch).length;
 
   return `
 # MISSION
@@ -59,17 +54,18 @@ These are Farcaster user profiles matching the search query.
 - bio: Profile description
 - fcCredScore/fcCred: Credibility score (1000=good, 5000=great, 10000=exceptional)
 - followerCount: Number of followers
-- isVectorMatch: Whether this was found via semantic vector search (higher relevance)
+- profileUrl: The URL to the user's Farcaster profile
 
 ## CASTS (${sortedCasts.length} results)
 These are individual posts by Farcaster users matching the search query.
 - username: Author's Farcaster handle
-- profileUrl: Author's profile url.
 - castContent: The actual post text
 - likesCount: Number of likes the post received
 - timestamp: When the post was created
 - mentionedChannels: Any channels mentioned in the post
 - mentionedUsers: Users mentioned in the post
+- castUrl: The URL to view the specific cast
+- authorProfileUrl: The URL to the author's Farcaster profile
 
 # RESPONSE GUIDELINES
 ## Understanding User Intent
@@ -85,7 +81,13 @@ These are individual posts by Farcaster users matching the search query.
 - Identify patterns and connections across multiple sources
 - Highlight timely and emerging information
 - For hiring/recruiting queries: Only suggest people who would be new additions to the team, not existing team members
-- Prioritize results from vector search (isVectorMatch: true) as they are more likely to match the semantic intent
+
+## Linking Rules (EXTREMELY IMPORTANT)
+- ALWAYS link usernames to their profile URLs. For example, when mentioning a builder named "alex", format it as [alex](https://warpcast.com/alex)
+- NEVER mention a builder without linking to their profile
+- When quoting a cast, always end with a link to the cast URL. For example: > This is a quote from a cast [View cast](https://warpcast.com/username/hash)
+- Every builder or project mentioned MUST have their username linked to their profileUrl
+- Check that every username mentioned in your report has a proper link to their profile
 
 ## Tone & Style
 - Write with precision and confidence
@@ -109,16 +111,26 @@ These are individual posts by Farcaster users matching the search query.
      - Specific contributions or expertise
      - Supporting evidence from bio or casts
      - Current focus and notable connections
+     - ALWAYS include a link to their profile URL using [username](profileUrl) format
    - Focus on unique information not already covered in Key Findings
    - For hiring/recruiting queries: Only include external candidates who are not already part of the organization
    
+3. **Strategic Implications** (when appropriate and relevant to user's request)
+   - Actionable takeaways
+   - Emerging opportunities
+   - Potential challenges or considerations
+
 # IMPORTANT
 - Ensure Key Findings and Notable Builders sections contain distinct information without redundancy
 - Focus exclusively on addressing the user's query with the provided data
 - Never include meta-commentary about data limitations, analysis process, or caveats
 - If limited data matches the query, provide the best possible analysis with available information without mentioning the limitation
 - Stay strictly on task to the user's request
+- Don't cite followers/fcCred in response
+- Analyze all available data in your response
 - For hiring/recruiting queries: Never suggest people who are already part of the organization mentioned in the query
+- Be logical and practical - if someone is asking about hiring, they want to find new people to hire, not people already on their team
+- MOST IMPORTANT: Every builder mentioned must have their username linked to their profile URL
 
 # MARKDOWN FORMATTING
 - Use ## for main sections and ### for subsections
@@ -126,10 +138,10 @@ These are individual posts by Farcaster users matching the search query.
 - Use bullet lists for related points and supporting evidence
 - Use > blockquotes for direct quotes from casts
 - Use horizontal rules (---) to separate major sections
-- When referencing a user, always hyperlink to their profileUrl like this: [username](profileUrl)
-- When citing a cast, include [view cast](castUrl) at the end of the quote
-- When referencing an entity without an account, link to the relevant castUrl or profileUrl
+- Format links to profiles as [Username](profileUrl)
+- Link to specific casts as [View cast](castUrl)
 - Maintain consistent formatting throughout
+- CRITICALLY IMPORTANT: Every builder or user mentioned MUST be linked to their profile URL
 
 # ACCOUNTS DATA (${sortedAccounts.length} PROFILES)
 ${JSON.stringify(sortedAccounts, null, 2)}

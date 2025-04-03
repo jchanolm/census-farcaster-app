@@ -20,35 +20,113 @@ type SearchResult = {
   results?: {
     accounts?: {
       username: string;
-      displayName?: string;
-      profileUrl: string; 
-      pfp?: string;
       bio?: string;
       followerCount?: number;
-      followingCount?: number;
-      fid?: number;
-      totalScore?: number;
-      bioScore?: number;
-      usernameScore?: number;
-      displayNameScore?: number;
+      fcCred?: number;
+      state?: string;
+      city?: string;
+      country?: string;
+      score?: number;
+      profileUrl?: string;
       [key: string]: any;
     }[];
     casts?: {
       username: string;
-      displayName?: string;
-      castUrl: string; 
-      authorProfileUrl: string; 
-      pfp?: string;
-      text: string;
+      text?: string;
+      castContent?: string;
       timestamp?: string;
-      totalScore?: number;
-      textScore?: number;
+      likesCount?: number;
+      mentionedChannels?: string[];
+      mentionedUsers?: string[];
+      score?: number;
+      castUrl?: string;
+      authorProfileUrl?: string;
       [key: string]: any;
     }[];
   };
   query?: string;
   [key: string]: any;
 };
+
+/**
+ * Extract all usernames from search results
+ */
+function extractUsernames(results: SearchResult): string[] {
+  const usernames: string[] = [];
+  
+  // Extract from accounts
+  if (results?.results?.accounts && Array.isArray(results.results.accounts)) {
+    results.results.accounts.forEach(account => {
+      if (account.username) usernames.push(account.username);
+    });
+  }
+  
+  // Extract from casts
+  if (results?.results?.casts && Array.isArray(results.results.casts)) {
+    results.results.casts.forEach(cast => {
+      if (cast.username) usernames.push(cast.username);
+      
+      // Also add mentioned users
+      if (cast.mentionedUsers && Array.isArray(cast.mentionedUsers)) {
+        cast.mentionedUsers.forEach(user => {
+          if (typeof user === 'string') usernames.push(user);
+        });
+      }
+    });
+  }
+  
+  return usernames;
+}
+
+/**
+ * Ensures all usernames in the report are properly linked to profiles
+ * This catches any mentions that the AI might have missed
+ */
+function ensureProfileLinks(markdown: string, usernames: string[] = []): string {
+  if (!markdown) return '';
+  
+  let processedMarkdown = markdown;
+  
+  // 1. First handle @username mentions that aren't already linked
+  processedMarkdown = processedMarkdown.replace(
+    /(?<!\[)@([a-zA-Z0-9_]+)(?!\])/g, 
+    '[@$1](https://warpcast.com/$1)'
+  );
+  
+  // 2. If we have a list of usernames from the search results, ensure they're all linked
+  if (usernames && usernames.length > 0) {
+    // Process line by line to avoid matching inside code blocks or already linked items
+    const lines = processedMarkdown.split('\n');
+    let inCodeBlock = false;
+    
+    for (let i = 0; i < lines.length; i++) {
+      // Track if we're in a code block
+      if (lines[i].startsWith('```')) {
+        inCodeBlock = !inCodeBlock;
+        continue;
+      }
+      
+      // Skip processing inside code blocks
+      if (inCodeBlock) continue;
+      
+      // Process each username
+      for (const username of usernames) {
+        if (!username || username.length < 2) continue; // Skip invalid usernames
+        
+        // Don't replace usernames that are already part of markdown links
+        if (lines[i].includes(`[${username}]`) || lines[i].includes(`[@${username}]`)) continue;
+        
+        // Replace standalone username (must be a whole word)
+        const usernameRegex = new RegExp(`\\b${username}\\b(?![^<]*>|[^\\[]*\\])`, 'g');
+        lines[i] = lines[i].replace(usernameRegex, `[${username}](https://warpcast.com/${username})`);
+      }
+    }
+    
+    processedMarkdown = lines.join('\n');
+  }
+  
+  return processedMarkdown;
+}
 
 function AgentReport({ report, darkMode, isLoading }) {
   if (isLoading) {
@@ -92,7 +170,19 @@ function AgentReport({ report, darkMode, isLoading }) {
     a: ({node, ...props}) => {
       // Check if this is a username mention
       if (props.href?.startsWith('https://warpcast.com/')) {
-        return <a className={`${accentColor} font-mono hover:underline`} target="_blank" rel="noopener noreferrer" {...props} />;
+        return (
+          <a 
+            className={`${accentColor} font-mono hover:underline inline-flex items-center`}
+            target="_blank" 
+            rel="noopener noreferrer" 
+            {...props}
+          >
+            {props.children}
+            <svg className="w-3 h-3 ml-1 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+            </svg>
+          </a>
+        );
       }
       return <a className={`${accentColor} hover:underline`} target="_blank" rel="noopener noreferrer" {...props} />;
     },
@@ -142,9 +232,6 @@ function AgentReport({ report, darkMode, isLoading }) {
     ),
   };
   
-  // Process username mentions before passing to ReactMarkdown
-  const processedReport = report.replace(/@([a-zA-Z0-9_]+)/g, '[@$1](https://warpcast.com/$1)');
-  
   return (
     <div className={`${darkMode ? 'bg-[#121620]' : 'bg-white'} rounded-lg border ${darkMode ? 'border-[#2a3343]' : 'border-gray-200'} p-5 shadow-sm mb-6 w-full`}>
       <div className="flex items-center mb-5">
@@ -160,7 +247,7 @@ function AgentReport({ report, darkMode, isLoading }) {
           remarkPlugins={[remarkGfm]}
           rehypePlugins={[rehypeRaw]}
         >
-          {processedReport}
+          {report}
         </ReactMarkdown>
       </div>
     </div>
@@ -179,6 +266,7 @@ export default function SearchInterface() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [results, setResults] = useState<SearchResult>({});
   const [showLogs, setShowLogs] = useState(false);
+  const [expandLogs, setExpandLogs] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const logsEndRef = useRef<HTMLDivElement>(null);
 
@@ -339,7 +427,14 @@ export default function SearchInterface() {
                       // Filter out ":keep-alive" from the streaming text
                       if (textChunk !== ":keep-alive") {
                         reportContent += textChunk;
-                        setAgentReport(reportContent);
+                        
+                        // Extract usernames from the results to ensure proper linking
+                        const usernames = extractUsernames(results);
+                        
+                        // Process report to ensure all usernames are linked
+                        const processedReport = ensureProfileLinks(reportContent, usernames);
+                        
+                        setAgentReport(processedReport);
                       }
                     }
                   } catch (e) {
@@ -347,12 +442,24 @@ export default function SearchInterface() {
                     const textContent = line.substring(5).trim();
                     if (textContent && textContent !== '[DONE]' && textContent !== ":keep-alive") {
                       reportContent += textContent;
-                      setAgentReport(reportContent);
+                      
+                      // Extract usernames from the results to ensure proper linking
+                      const usernames = extractUsernames(results);
+                      
+                      // Process report to ensure all usernames are linked
+                      const processedReport = ensureProfileLinks(reportContent, usernames);
+                      
+                      setAgentReport(processedReport);
                     }
                   }
                 }
               }
             }
+            
+            // Final processing to ensure all usernames are linked
+            const usernames = extractUsernames(results);
+            const finalProcessedReport = ensureProfileLinks(reportContent, usernames);
+            setAgentReport(finalProcessedReport);
             
             addLog(`Agent analysis complete - generated report`, 'success');
           }
