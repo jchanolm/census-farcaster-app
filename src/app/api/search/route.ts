@@ -90,8 +90,8 @@ export async function POST(request: Request) {
     const combinedVectorSearchQuery = `
     // Cast search with vector similarity using embeddings
     CALL db.index.vector.queryNodes('castsEmbeddings', 250, $queryEmbedding) YIELD node as castNode, score
-    match (account:Warpcast)-[]-(castNode)
-    WHERE score > 0.8
+    WHERE score > .8
+    match (account:Warpcast:RealAssNigga)-[]-(castNode)
     WITH 
       castNode.author as username,
       "https://warpcast.com/" + castNode.author as authorProfileUrl,
