@@ -213,6 +213,14 @@ ${linkingInstructions}
 - Even in these edge cases, prioritize accounts that also have casts in the results
 - Do not include accounts that only match on the handle unless specifically requested
 
+# PERSON-SPECIFIC QUERY HANDLING
+- If the query is about a specific person (e.g., "tell me about username"), ONLY include:
+  - Casts authored by that specific person
+  - Casts that explicitly mention or discuss that specific person
+  - Do NOT include casts that merely contain the person's name/username in an unrelated context
+  - If you're unsure whether a cast is actually about the person in question, exclude it
+  - Be strict about this filtering - when in doubt, exclude rather than include
+
 # MARKDOWN FORMATTING
 - Use \`##\` headings for major sections and \`###\` subheadings if needed.
 - Use **bold** for important names or concepts.
