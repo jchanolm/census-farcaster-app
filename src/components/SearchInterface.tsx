@@ -224,8 +224,8 @@ export default function SearchInterface({ userFid, userName, displayName }) {
       if (accountsCount > 0 || castsCount > 0) {
         setIsAgentProcessing(true);
         addLog(`Starting agent analysis of ${accountsCount} accounts and ${castsCount} casts...`, 'info');
-        // Start countdown from 15 seconds
-        setCountdownSeconds(15);
+        // Start countdown from 20 seconds
+        setCountdownSeconds(20);
         
         try {
           // Call the agent API with the structured format
