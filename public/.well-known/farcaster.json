@@ -5,7 +5,7 @@
       "iconUrl": "https://farcaster.usequotient.xyz/icon.png",
       "homeUrl": "https://farcaster.usequotient.xyz",
       "imageUrl": "https://farcaster.usequotient.xyz/opengraph-image.png",
-      "buttonTitle": "Explore",
+      "buttonTitle": "Get Context with Quotient",
       "splashImageUrl": "https://farcaster.usequotient.xyz/icon.png",
       "splashBackgroundColor": "#000",
       "webhookUrl": "https://farcaster.usequotient.xyz/api/webhook"

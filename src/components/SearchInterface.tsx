@@ -443,13 +443,6 @@ export default function SearchInterface({ userFid, userName, displayName }) {
             </div>
           )}
           
-          {/* Countdown timer for report completion */}
-          {countdownSeconds !== null && (
-            <div className="mt-3 mb-2 font-mono text-sm text-purple-400 border-l-2 border-purple-500 pl-3">
-              <span>Expected report completion in {countdownSeconds} seconds</span>
-            </div>
-          )}
-          
           {/* Search status */}
           <div className={`flex items-center text-xs ${mutedTextColor} mt-3`}>
             {isSearching ? (
