@@ -120,7 +120,7 @@ export async function POST(request: Request) {
 
     // Account search with fulltext search using cleaned query
     CALL db.index.fulltext.queryNodes("accounts", $effectiveQuery) YIELD node as accountNode, score 
-    WHERE score > 
+    WHERE score > 3.8
     WITH 
       accountNode.username as username,
       "https://warpcast.com/" + accountNode.username as profileUrl,
