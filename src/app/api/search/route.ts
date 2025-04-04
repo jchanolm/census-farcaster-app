@@ -91,7 +91,7 @@ export async function POST(request: Request) {
     // Cast search with vector similarity using embeddings
     CALL db.index.fulltext.queryNodes('casts', $effectiveQuery) YIELD node as castNode, score as score 
     WHERE score > 3.75
-    ORDER BY SCORE DESC 
+    ORDER BY score DESC 
     LIMIT 250
     MATCH (castNode)-[]-(real:RealAssNigga:Account)
     WITH 
