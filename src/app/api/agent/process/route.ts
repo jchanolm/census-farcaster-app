@@ -102,6 +102,7 @@ The search results are organized into two sections:
 1. **ACCOUNTS** (${sortedAccounts.length} results)
    - **username:** Farcaster handle  
    - **bio:** Profile description  
+   - **userChannels** Channel memberships, indicative of user interests
    - **fcCred:** Score based on OG engagement  
    - **followerCount:** Followers  
    - **profileUrl:** URL to Farcaster profile  
