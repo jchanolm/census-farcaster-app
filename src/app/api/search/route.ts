@@ -90,7 +90,9 @@ export async function POST(request: Request) {
     const combinedVectorSearchQuery = `
     // Cast search with vector similarity using embeddings
     CALL db.index.fulltext.queryNodes('casts', $effectiveQuery) YIELD node as castNode, score as score 
-    WHERE score > 4.25
+    WHERE score > 3.75
+    ORDER BY SCORE DESC 
+    LIMIT 250
     MATCH (castNode)-[]-(real:RealAssNigga:Account)
     WITH 
       castNode.author as username,
@@ -113,9 +115,6 @@ export async function POST(request: Request) {
       'cast_match' as matchType
     WHERE castContent IS NOT NULL
     RETURN username, bio, followerCount, fcCred, state, city, country, pfpUrl, castContent, timestamp, likesCount, mentionedChannels, mentionedUsers, score, matchType
-    ORDER BY score DESC
-    LIMIT 250
-
     UNION ALL
 
     // Account search with fulltext search using cleaned query
