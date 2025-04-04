@@ -1,3 +1,4 @@
+// app/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -5,59 +6,85 @@ import { sdk } from '@farcaster/frame-sdk';
 import SearchInterface from '@/components/SearchInterface';
 
 export default function Home() {
-  const [sdkReady, setSdkReady] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [userData, setUserData] = useState<{ fid: number; username?: string; displayName?: string } | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let mounted = true;
-
-    // Initialize the app immediately
-    const initializeApp = async () => {
-      if (mounted) {
-        try {
-          // Log the SDK context for debugging
-          console.log('SDK Context:', sdk.context);
-          
-          // Call ready to dismiss the splash screen when the app is ready to be displayed
-          // This should be called as soon as possible while avoiding content reflows
-          await sdk.actions.ready();
-          console.log('Farcaster SDK initialized');
-        } catch (error) {
-          console.error('Failed to initialize Farcaster SDK:', error);
-        } finally {
-          // Set ready state regardless of success or failure
-          setSdkReady(true);
+    const initApp = async () => {
+      try {
+        // Initialize the app and hide splash screen
+        await sdk.actions.ready();
+        
+        // Access user information from context
+        const context = await sdk.context;
+        if (context?.user) {
+          setUserData({
+            fid: context.user.fid,
+            username: context.user.username,
+            displayName: context.user.displayName,
+          });
         }
+      } catch (error) {
+        console.error('Error initializing app:', error);
+        setError('Failed to initialize Farcaster connection.');
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    // Start initialization immediately
-    initializeApp();
-    
-    return () => {
-      mounted = false;
-    };
+    initApp();
   }, []);
 
-  return (
-    <div>
-      {sdkReady ? (
-        <SearchInterface />
-      ) : (
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center">
-            <div className="mb-4 text-lg font-medium">Loading Quotient</div>
-            {/* Spinner */}
-            <div className="flex justify-center">
-              <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-[#0057ff] border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" role="status">
-                <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">
-                  Loading...
-                </span>
-              </div>
+  if (isLoading) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-black text-white">
+        <div className="flex flex-col items-center">
+          <div className="mb-4">
+            <div className="flex space-x-2">
+              <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
+              <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse delay-100"></div>
+              <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse delay-200"></div>
             </div>
-            <div className="mt-3 text-sm text-gray-500">Frame initializing.</div>
           </div>
+          <p className="text-sm text-gray-400 font-mono">Initializing...</p>
         </div>
-      )}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-black text-white p-6">
+        <div className="bg-[#121620] rounded-lg border border-red-800 p-4 max-w-md w-full">
+          <div className="flex items-center mb-3">
+            <svg className="w-5 h-5 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <h2 className="text-lg font-medium text-red-400">Connection Error</h2>
+          </div>
+          <p className="text-gray-300 mb-4">{error}</p>
+          <p className="text-gray-400 text-sm">
+            This app requires a connection to Farcaster. Please make sure you're opening this app from Warpcast.
+          </p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="mt-4 w-full bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-black text-white">
+      <SearchInterface 
+        userFid={userData?.fid} 
+        userName={userData?.username} 
+        displayName={userData?.displayName} 
+      />
     </div>
   );
 }

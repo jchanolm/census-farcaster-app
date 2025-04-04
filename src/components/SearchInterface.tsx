@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { sdk } from '@farcaster/frame-sdk';
-import AddFrameButton from '@/components/AddFrameButton';
 import SidekickBanner from '@/components/SidekickBanner';
 import AgentReport from './AgentReport';
 import ShareButton from './ShareButton';
@@ -75,7 +74,7 @@ function extractUsernames(results: SearchResult): string[] {
   return Array.from(new Set(usernames));
 }
 
-export default function SearchInterface() {
+export default function SearchInterface({ userFid, userName, displayName }) {
   const [query, setQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [isAgentProcessing, setIsAgentProcessing] = useState(false);
@@ -89,6 +88,7 @@ export default function SearchInterface() {
   const [showLogs, setShowLogs] = useState(false);
   const [expandLogs, setExpandLogs] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [countdownSeconds, setCountdownSeconds] = useState<number | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const logsEndRef = useRef<HTMLDivElement>(null);
 
@@ -111,17 +111,28 @@ export default function SearchInterface() {
     }
   }, [logs]);
 
-  // Typewriter effect when searching
+  // Typewriter effect when searching - faster speed (50ms instead of 100ms)
   useEffect(() => {
     if (isSearching && typewriterIndex < query.length) {
       const timer = setTimeout(() => {
         setTypewriterText(prev => prev + query.charAt(typewriterIndex));
         setTypewriterIndex(prev => prev + 1);
-      }, 100);
+      }, 50);
       
       return () => clearTimeout(timer);
     }
   }, [isSearching, typewriterIndex, query]);
+
+  // Countdown timer effect
+  useEffect(() => {
+    if (countdownSeconds !== null && countdownSeconds > 0) {
+      const timer = setTimeout(() => {
+        setCountdownSeconds(countdownSeconds - 1);
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [countdownSeconds]);
 
   // Add a log entry
   const addLog = (message: string, type: 'info' | 'error' | 'success' | 'warning' = 'info') => {
@@ -137,6 +148,18 @@ export default function SearchInterface() {
     if (inputRef.current) {
       inputRef.current.style.height = 'auto';
       inputRef.current.style.height = `${Math.min(inputRef.current.scrollHeight, 150)}px`;
+    }
+  };
+
+  // Handle adding the frame
+  const handleAddFrame = async () => {
+    try {
+      await sdk.actions.addFrame();
+      console.log('App was added successfully');
+      addLog('App was added to Warpcast', 'success');
+    } catch (error) {
+      console.error('Failed to add frame:', error);
+      addLog('Failed to add app to Warpcast', 'error');
     }
   };
 
@@ -201,6 +224,8 @@ export default function SearchInterface() {
       if (accountsCount > 0 || castsCount > 0) {
         setIsAgentProcessing(true);
         addLog(`Starting agent analysis of ${accountsCount} accounts and ${castsCount} casts...`, 'info');
+        // Start countdown from 15 seconds
+        setCountdownSeconds(15);
         
         try {
           // Call the agent API with the structured format
@@ -273,6 +298,7 @@ export default function SearchInterface() {
           console.error('Agent processing error:', error);
         } finally {
           setIsAgentProcessing(false);
+          setCountdownSeconds(null);
         }
       } else {
         addLog('No results to analyze', 'warning');
@@ -286,11 +312,6 @@ export default function SearchInterface() {
     }
   };
 
-  // Toggle dark/light mode
-  const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
-  };
-
   // Handle successful share
   const handleShareSuccess = (url: string) => {
     setShareUrl(url);
@@ -298,74 +319,85 @@ export default function SearchInterface() {
   };
 
   // Get dynamic background and text colors based on theme
-  const bgColor = darkMode ? 'bg-[#0a1020]' : 'bg-[#f5f7fa]';
-  const cardBg = darkMode ? 'bg-[#121620]' : 'bg-white';
-  const borderColor = darkMode ? 'border-[#2a3343]' : 'border-gray-200';
+  const bgColor = darkMode ? 'bg-black' : 'bg-[#f5f7fa]';
+  const cardBg = darkMode ? 'bg-[#101018]' : 'bg-white';
+  const borderColor = darkMode ? 'border-[#222230]' : 'border-gray-200';
   const textColor = darkMode ? 'text-gray-100' : 'text-gray-800';
-  const textMutedColor = darkMode ? 'text-gray-400' : 'text-gray-500';
-  const inputBg = darkMode ? 'bg-[#1a2030]' : 'bg-white';
+  const mutedTextColor = darkMode ? 'text-gray-400' : 'text-gray-500';
+  const inputBg = darkMode ? 'bg-[#15151f]' : 'bg-white';
   const placeholderColor = darkMode ? 'placeholder-gray-500' : 'placeholder-gray-400';
 
   return (
-    <div className={`w-full min-h-screen ${bgColor} ${textColor} relative flex flex-col items-center`}>
-      {/* Header with Mini App button on left, Follow button on right */}
-      <header className="w-full py-4 px-6 flex justify-between items-center">
-        <div className="flex items-center">
-          {/* Left side - empty now */}
-        </div>
+    <div className={`w-full min-h-screen ${bgColor} ${textColor} flex flex-col`}>
+      {/* Header with add frame and theme toggle */}
+      <header className="w-full py-3 px-4 flex items-center justify-end space-x-2">
+        {/* Add frame button */}
+        <button
+          onClick={handleAddFrame}
+          className="p-2 rounded-full bg-blue-600 hover:bg-blue-700 transition-colors"
+          aria-label="Add frame"
+        >
+          <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+            <path d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"></path>
+          </svg>
+        </button>
         
-        <div className="flex items-center">
-          {/* Follow Button (right side) */}
-          <AddFrameButton />          
-          {/* Theme toggle button */}
-          <button
-            onClick={toggleDarkMode}
-            className={`p-2 rounded-full ${darkMode ? 'bg-[#1a2030] hover:bg-[#2a3040]' : 'bg-gray-200 hover:bg-gray-300'} ml-2 transition-colors`}
-            aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-          >
-            {darkMode ? (
-              <svg className="w-5 h-5 text-gray-300" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" />
-              </svg>
-            ) : (
-              <svg className="w-5 h-5 text-gray-700" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
-              </svg>
-            )}
-          </button>
-        </div>
+        {/* Theme toggle */}
+        <button
+          onClick={() => setDarkMode(!darkMode)}
+          className={`p-2 rounded-full ${darkMode ? 'bg-[#1a1a25]' : 'bg-gray-200'}`}
+          aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+        >
+          {darkMode ? (
+            <svg className="w-4 h-4 text-gray-300" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+              <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" />
+            </svg>
+          ) : (
+            <svg className="w-4 h-4 text-gray-700" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+              <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+            </svg>
+          )}
+        </button>
       </header>
       
-      {/* Add Sidekick Banner here */}
-      <SidekickBanner darkMode={darkMode} />
-      
-      {/* Main search area */}
-      <main className="pt-2 px-6 md:px-14 w-full max-w-5xl mx-auto">
+      {/* Main content area */}
+      <main className="flex-1 w-full max-w-md mx-auto px-5 pt-4 pb-6 flex flex-col">
+        {/* App Title */}
         <div className="mb-6 text-center">
-          <h1 className="text-3xl md:text-4xl font-bold mb-2">Quotient Farcaster Research Agent</h1>
-          <p className={`text-sm ${textMutedColor} font-mono`}>Find Your (Onchain) People</p>
+          <h1 className="text-2xl font-bold mb-1">Quotient</h1>
+          <p className={`text-sm ${mutedTextColor}`}>
+            Farcaster Research Agent
+          </p>
+          {userName && (
+            <p className={`text-xs ${mutedTextColor} font-mono mt-2`}>
+              Welcome, {displayName || userName || 'Explorer'}
+            </p>
+          )}
         </div>
-        
-        {/* Search box */}
-        <div className={`w-full max-w-3xl mx-auto ${cardBg} rounded-lg border ${borderColor} p-5 shadow-sm mb-6`}>
-          <div className="flex items-center mb-3">
-            <svg className="w-4 h-4 mr-2 opacity-80" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8"></circle>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>
-            <div className={`text-xs uppercase tracking-wider ${textMutedColor} font-semibold font-mono`}>Query</div>
-          </div>
-          
-          <form onSubmit={handleSearch} className="mb-3">
-            <div className="flex flex-col">
+        {/* Search card */}
+        <div className={`${cardBg} rounded-xl border ${borderColor} p-5 shadow-sm mb-6`}>
+          <div className="mb-4">
+            <div className="flex items-center mb-3">
+              <svg className="w-4 h-4 mr-2 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <label htmlFor="search-query" className={`text-xs uppercase tracking-wider ${mutedTextColor}`}>
+                QUERY
+              </label>
+            </div>
+            
+            {/* Search input */}
+            <div className="relative">
               <textarea
+                id="search-query"
                 ref={inputRef}
                 value={query}
                 onChange={handleInputChange}
-                placeholder="e.g. Who is building dev tools for prediction markets...?"
+                placeholder="e.g. Who is building dev tools for prediction markets?"
                 disabled={isSearching || isAgentProcessing}
-                className={`w-full ${inputBg} border ${borderColor} rounded p-4 ${textColor} focus:outline-none focus:ring-1 focus:ring-blue-500 ${placeholderColor} font-mono text-sm resize-none overflow-hidden min-h-[60px]`}
-                rows={1}
+                className={`w-full ${inputBg} border ${borderColor} rounded-xl p-4 pr-12 ${textColor} focus:outline-none focus:ring-1 focus:ring-blue-500 ${placeholderColor} text-sm resize-none overflow-hidden min-h-[60px]`}
+                rows={2}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
@@ -373,30 +405,46 @@ export default function SearchInterface() {
                   }
                 }}
               />
-              <div className="flex justify-between mt-2">
-                <div className={`text-xs ${textMutedColor} italic`}>
-                  Tip: Short, direct queries with descriptive adjectives work best
-                </div>
-                <button
-                  type="submit"
-                  disabled={isSearching || isAgentProcessing || !query.trim()}
-                  className="bg-blue-600 text-white px-4 py-2 rounded text-xs uppercase tracking-wider font-mono hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
-                >
-                  Execute
-                </button>
-              </div>
+              
+              {/* Execute button (modern version) */}
+              <button
+                type="button"
+                onClick={handleSearch}
+                disabled={isSearching || isAgentProcessing || !query.trim()}
+                className={`absolute right-3 bottom-3 rounded-lg p-2 transition-colors focus:outline-none
+                ${isSearching || isAgentProcessing || !query.trim() 
+                  ? 'bg-[#2a2a35] text-gray-500 cursor-not-allowed' 
+                  : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+                aria-label="Execute query"
+              >
+                {isSearching ? (
+                  <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                ) : (
+                  <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                    <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                )}
+              </button>
             </div>
-          </form>
+            
+            <div className={`text-xs ${mutedTextColor} italic mt-2 ml-1`}>
+              Tip: Short, direct queries with descriptive adjectives work best
+            </div>
+          </div>
           
-          {/* Typewriter effect - more subtle */}
+          {/* Typewriter effect - for when searching */}
           {isSearching && (
-            <div className="mt-3 mb-2 font-mono text-sm text-blue-400 border-l-2 border-blue-500 pl-3">
+            <div className="mt-3 mb-2 font-mono text-sm text-blue-400 border-l-2 border-blue-500 pl-3 overflow-hidden">
               <span className="inline-block">{typewriterText}</span>
               <span className="inline-block w-1.5 h-3.5 bg-blue-500 ml-0.5 animate-pulse"></span>
             </div>
           )}
+          
           {/* Search status */}
-          <div className={`flex items-center mt-3 text-xs ${textMutedColor} font-mono`}>
+          <div className={`flex items-center text-xs ${mutedTextColor} mt-3`}>
             {isSearching ? (
               <>
                 <span className="w-2 h-2 bg-blue-500 rounded-full mr-2 animate-pulse"></span>
@@ -420,9 +468,9 @@ export default function SearchInterface() {
             )}
           </div>
           
-          {/* Improved logs section - more minimal */}
+          {/* Logs section */}
           {logs.length > 0 && showLogs && (
-            <div className={`mt-3 ${darkMode ? 'bg-[#1a2030]' : 'bg-gray-50'} rounded-md p-3 font-mono text-xs`}>
+            <div className={`mt-3 ${darkMode ? 'bg-[#1a1a25]' : 'bg-gray-50'} rounded-lg p-3 font-mono text-xs`}>
               {/* Show just the most recent log, or all if expanded */}
               {(expandLogs ? logs : logs.slice(-1)).map((log, index) => {
                 let logColor;
@@ -449,7 +497,9 @@ export default function SearchInterface() {
                 return (
                   <div key={index} className={`mb-1 flex items-start ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                     <span className={`${logColor} mr-1`}>{logIcon}</span>
-                    <span className="opacity-60 mr-2">{log.timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'})}</span>
+                    <span className="opacity-60 mr-2 text-xs">
+                      {log.timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'})}
+                    </span>
                     <span className={log.type === 'error' ? logColor : ''}>{log.message}</span>
                   </div>
                 );
@@ -499,6 +549,26 @@ export default function SearchInterface() {
             shareUrl={shareUrl}
           />
         )}
+        
+        {/* Support banner at bottom */}
+        <div className="mt-auto pt-4">
+          <a
+            href="https://www.sidequest.build/quotient"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`w-full flex items-center justify-center py-2.5 px-3 
+                      ${darkMode ? 'bg-[#101018] text-white' : 'bg-[#f2f2f5] text-[#333]'} 
+                      border ${darkMode ? 'border-[#222230]' : 'border-gray-300'} 
+                      rounded-xl transition-all hover:border-blue-500 block`}
+          >
+            <div className="flex items-center">
+              <div className="w-2.5 h-2.5 bg-blue-500 rounded-sm mr-2"></div>
+              <span className="text-xs uppercase tracking-wider font-mono">
+                Support us on Sidequest
+              </span>
+            </div>
+          </a>
+        </div>
       </main>
     </div>
   );

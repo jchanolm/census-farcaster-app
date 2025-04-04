@@ -15,6 +15,8 @@ function computeCombinedScore({
 }
 
 // Format the data for the AI prompt
+// Fixed formatPrompt function with improved cast and user linking
+// Updated formatPrompt function with correct cast URL handling
 function formatPrompt(query: string, results: any) {
   // Ensure results structure exists with defaults
   const { accounts = [], casts = [] } = results;
@@ -34,6 +36,11 @@ function formatPrompt(query: string, results: any) {
       followerCount 
     });
     
+    // Ensure profileUrl is correctly formatted for USER PROFILES
+    const profileUrl = account.profileUrl && account.profileUrl.startsWith('http')
+      ? account.profileUrl
+      : `https://warpcast.com/${username}`;
+    
     return {
       username,
       bio,
@@ -41,7 +48,7 @@ function formatPrompt(query: string, results: any) {
       fcCred,
       relevanceScore,
       combinedScore, // store it for reference
-      profileUrl: account.profileUrl || `https://warpcast.com/${username}`
+      profileUrl // User's profile URL
     };
   });
   
@@ -54,6 +61,24 @@ function formatPrompt(query: string, results: any) {
     const castContent = cast.text || cast.castContent || '';
     const likesCount = cast.likesCount || 0;
     const timestamp = cast.timestamp || '';
+    const hash = cast.hash || '';
+    
+    // IMPORTANT: Ensure castUrl is properly formatted for SPECIFIC CASTS
+    // This should link to the specific cast, not the user's profile
+    let castUrl = cast.castUrl || '';
+    if (!castUrl || !castUrl.startsWith('http')) {
+      // If no hash available, we can't properly link to the cast
+      castUrl = hash 
+        ? `https://warpcast.com/${username}/${hash}` 
+        : `https://warpcast.com/${username}`;
+    }
+    
+    // Ensure authorProfileUrl is properly formatted - separate from castUrl
+    let authorProfileUrl = cast.authorProfileUrl || '';
+    if (!authorProfileUrl || !authorProfileUrl.startsWith('http')) {
+      authorProfileUrl = `https://warpcast.com/${username}`;
+    }
+    
     const mentionedChannels = cast.mentionedChannels || [];
     const mentionedUsers = cast.mentionedUsers || [];
     const relevanceScore = cast.relevanceScore || cast.score || 0;
@@ -75,13 +100,25 @@ function formatPrompt(query: string, results: any) {
       mentionedUsers,
       relevanceScore,
       combinedScore,
-      castUrl: cast.castUrl || '',
-      authorProfileUrl: cast.authorProfileUrl || `https://warpcast.com/${username}`
+      castUrl,         // URL to the specific cast
+      authorProfileUrl // URL to the user's profile
     };
   });
   
   // Sort casts by combined score for better analysis
   const sortedCasts = processedCasts.sort((a, b) => b.combinedScore - a.combinedScore);
+
+  // Add explicit instructions for linking with CLEAR distinction between cast URLs and profile URLs
+  const linkingInstructions = `
+# LINKING INSTRUCTIONS
+- When mentioning a Farcaster user, use the format \`[username](profileUrl)\` where profileUrl is the user's profile URL (authorProfileUrl).
+- When quoting a cast, ALWAYS end with \`[View cast](castUrl)\` where castUrl is the URL for that specific cast, NOT the author's profile.
+- IMPORTANT: castUrl and authorProfileUrl are DIFFERENT. Use castUrl to link to a specific cast, not the user's profile.
+- For any users mentioned in cast content, find their profile URL if available and convert mentions to links.
+- EXAMPLES:
+  - User reference: \`[${sortedAccounts[0]?.username || 'username'}](${sortedAccounts[0]?.profileUrl || 'https://warpcast.com/username'})\`
+  - Cast quote: \`> This is a quote from a cast [View cast](${sortedCasts[0]?.castUrl || 'https://warpcast.com/username/hash'})\`
+`;
 
   return `
 # MISSION
@@ -102,7 +139,7 @@ The search results are organized into two sections:
 1. **ACCOUNTS** (${sortedAccounts.length} results)
    - **username:** Farcaster handle  
    - **bio:** Profile description  
-   - **userChannels** Channel memberships, indicative of user interests
+   - **userChannels:** Channel memberships, indicative of user interests
    - **fcCred:** Score based on OG engagement  
    - **followerCount:** Followers  
    - **profileUrl:** URL to Farcaster profile  
@@ -114,14 +151,16 @@ The search results are organized into two sections:
    - **timestamp:** Creation time  
    - **mentionedChannels:** Channels mentioned  
    - **mentionedUsers:** Users mentioned  
-   - **castUrl:** URL for the post  
-   - **authorProfileUrl:** Author's profile URL  
+   - **castUrl:** URL for the specific cast (NOT the author's profile)
+   - **authorProfileUrl:** URL for the author's profile  
+
+${linkingInstructions}
 
 # RESPONSE GUIDELINES
 1. **Understand the Query**
    - For hiring or recruiting, identify new potential candidates with relevant expertise (not already part of the organization).
    - For market research, highlight trends and key user discussions.
-   - If you mention a cast, cite the cast with its castUrl (castUrl) and quote relevant sections
+   - If you mention a cast, cite the cast with its castUrl and quote relevant sections
    - For technical research, present implementation details, challenges, or solutions.
    - For competitive analysis, compare approaches and unique differentiators.
    - If the user requests certain exclusions, honor them exactly.
@@ -135,10 +174,9 @@ The search results are organized into two sections:
    - Avoid speculation; stay factual and relevant.
 
 3. **Linking Rules**
-   - Always link usernames to their profile URLs, e.g., \`[alex](authorProfileUrl)\`.
-   - When quoting a cast, conclude with a link to its URL, e.g., 
-     > This is a quote [View cast](castUrl)
-   - Every user mentioned must be linked to their profile using \`[username](profileUrl)\`.
+   - When mentioning a user, link to their profile URL: \`[username](authorProfileUrl)\`
+   - When quoting a cast, link to the specific cast URL: \`[View cast](castUrl)\`
+   - NEVER confuse these two types of links - casts must link to castUrl, users to profileUrl
 
 4. **Tone & Style**
    - Write precisely and concisely.
@@ -150,7 +188,7 @@ The search results are organized into two sections:
    1. **Executive Summary**  
       - High-level overview (2-3 key findings addressing the query).
    2. **Notable Builders & Projects & Concepts**  
-      - Mention 4-6 relevant builders or projects.
+      - Mention 4-7 relevant builders or projects.
       - Cite casts, including quotes + castUrl
       - Include specific evidence, expertise, and connections to the query.
       - Link to their profile using \`[username](authorProfileUrl)\`.
@@ -159,11 +197,29 @@ The search results are organized into two sections:
 
 # IMPORTANT
 - Keep Key Findings and Notable Builders sections distinct, with no redundancy.
-- End Report after "Notable  Builders & Projects & Concepts". No further notes or asides needed.
+- End Report after "Notable Builders & Projects & Concepts". No further notes or asides needed.
 - Give a subtle boost to accounts with relatively fewer followers but higher fcCred. Do NOT EVER SAY YOU ARE DOING THIS.
 - Focus solely on the user's question; omit any references to data volume or provenance.
 - For recruiting, do not list individuals already within the mentioned organization.
 - No next steps or other extra commentary—just deliver insights.
+- ALL usernames must be linked to profile URLs and ALL cast quotes must have View cast links.
+- DISTINGUISH CLEARLY between castUrl (for linking to specific casts) and authorProfileUrl (for linking to user profiles)
+
+# ACCOUNT SELECTION CRITERIA
+- Only include accounts that appear in the cast results, unless:
+  - The user is specifically asking for information about a particular person/username
+  - The account's bio contains highly relevant information to the query (e.g., for a query about "prediction markets", include accounts whose bios mention "prediction markets")
+  - The account works at a company or has a role specifically relevant to the query (e.g., product managers at relevant companies)
+- Even in these edge cases, prioritize accounts that also have casts in the results
+- Do not include accounts that only match on the handle unless specifically requested
+
+# PERSON-SPECIFIC QUERY HANDLING
+- If the query is about a specific person (e.g., "tell me about username"), ONLY include:
+  - Casts authored by that specific person
+  - Casts that explicitly mention or discuss that specific person
+  - Do NOT include casts that merely contain the person's name/username in an unrelated context
+  - If you're unsure whether a cast is actually about the person in question, exclude it
+  - Be strict about this filtering - when in doubt, exclude rather than include
 
 # MARKDOWN FORMATTING
 - Use \`##\` headings for major sections and \`###\` subheadings if needed.

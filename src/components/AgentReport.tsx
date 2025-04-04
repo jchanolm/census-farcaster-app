@@ -71,19 +71,19 @@ export default function AgentReport({ report, darkMode, isLoading }: AgentReport
       if (props.href?.startsWith('https://warpcast.com/')) {
         return (
           <a 
-            className={`${accentColor} font-mono hover:underline inline-flex items-center`}
+            className={`${accentColor} font-mono hover:underline inline-flex items-center break-words`}
             target="_blank" 
             rel="noopener noreferrer" 
             {...props}
           >
             {props.children}
-            <svg className="w-3 h-3 ml-1 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <svg className="w-3 h-3 ml-1 inline-block flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
             </svg>
           </a>
         );
       }
-      return <a className={`${accentColor} hover:underline`} target="_blank" rel="noopener noreferrer" {...props} />;
+      return <a className={`${accentColor} hover:underline break-words`} target="_blank" rel="noopener noreferrer" {...props} />;
     },
     
     // Lists with custom styling
@@ -91,7 +91,7 @@ export default function AgentReport({ report, darkMode, isLoading }: AgentReport
       return (
         <li className="flex items-start mb-2">
           <span className={`inline-flex items-center justify-center w-5 h-5 rounded-full ${darkMode ? 'bg-blue-900 bg-opacity-40 text-blue-300' : 'bg-blue-100 text-blue-700'} text-xs font-medium mr-3 flex-shrink-0`}>•</span>
-          <span>{props.children}</span>
+          <span className="break-words overflow-hidden">{props.children}</span>
         </li>
       );
     },
@@ -100,7 +100,7 @@ export default function AgentReport({ report, darkMode, isLoading }: AgentReport
     hr: ({node, ...props}) => <hr className={`my-4 border-t ${darkMode ? 'border-gray-700' : 'border-gray-300'}`} {...props} />,
     
     // Custom paragraphs
-    p: ({node, ...props}) => <p className="mb-3 leading-relaxed" {...props} />,
+    p: ({node, ...props}) => <p className="mb-3 leading-relaxed break-words" {...props} />,
     
     // Bold text
     strong: ({node, ...props}) => <strong className={`${accentColor} font-semibold`} {...props} />,
@@ -113,13 +113,13 @@ export default function AgentReport({ report, darkMode, isLoading }: AgentReport
           style={atomDark}
           language={match[1]}
           PreTag="div"
-          className="rounded-md my-3"
+          className="rounded-md my-3 overflow-auto"
           {...props}
         >
           {String(children).replace(/\n$/, '')}
         </SyntaxHighlighter>
       ) : (
-        <code className={`${darkMode ? 'bg-gray-800 text-gray-200' : 'bg-gray-100 text-gray-800'} px-1 py-0.5 rounded text-sm`} {...props}>
+        <code className={`${darkMode ? 'bg-gray-800 text-gray-200' : 'bg-gray-100 text-gray-800'} px-1 py-0.5 rounded text-sm break-words`} {...props}>
           {children}
         </code>
       );
@@ -127,7 +127,7 @@ export default function AgentReport({ report, darkMode, isLoading }: AgentReport
     
     // Blockquotes
     blockquote: ({node, ...props}) => (
-      <blockquote className={`border-l-4 ${darkMode ? 'border-gray-700 bg-gray-800 bg-opacity-50' : 'border-gray-300 bg-gray-100 bg-opacity-50'} pl-4 py-2 my-3 rounded-r`} {...props} />
+      <blockquote className={`border-l-4 ${darkMode ? 'border-gray-700 bg-gray-800 bg-opacity-50' : 'border-gray-300 bg-gray-100 bg-opacity-50'} pl-4 py-2 my-3 rounded-r overflow-auto`} {...props} />
     ),
   };
   
@@ -143,7 +143,7 @@ export default function AgentReport({ report, darkMode, isLoading }: AgentReport
         </div>
       </div>
       
-      <div className={`text-sm ${darkMode ? 'text-gray-100' : 'text-gray-800'} font-sans leading-relaxed`}>
+      <div className={`text-sm ${darkMode ? 'text-gray-100' : 'text-gray-800'} font-sans leading-relaxed overflow-hidden`}>
         <ReactMarkdown 
           components={components}
           remarkPlugins={[remarkGfm]}
