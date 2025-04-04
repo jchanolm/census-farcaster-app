@@ -179,7 +179,7 @@ export default function SearchInterface({ userFid, userName, displayName }) {
             ) : isCompleted ? (
               <>
                 <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                <span>Query completed.</span>
+                <span>Query complete.</span>
               </>
             ) : (
               <>
