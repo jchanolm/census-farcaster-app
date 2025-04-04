@@ -96,7 +96,7 @@ export async function POST(request: Request) {
     MATCH (castNode)-[]-(real:RealAssNigga:Account)
     WITH 
       castNode.author as username,
-      "https://warpcast.com/" + castNode.author as authorProfileUrl,
+      "https://warpcast.com/" + castNode.author as profileUrl,
       real.bio as bio,
       real.channels as userChannels,
       real.followerCount as followerCount,

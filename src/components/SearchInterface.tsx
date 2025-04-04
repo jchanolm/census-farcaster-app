@@ -1,15 +1,101 @@
-// components/SearchInterface.tsx
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
 import { sdk } from '@farcaster/frame-sdk';
+import SidekickBanner from '@/components/SidekickBanner';
+import AgentReport from './AgentReport';
+import ShareButton from './ShareButton';
+
+type LogEntry = {
+  message: string;
+  type: 'info' | 'error' | 'success' | 'warning';
+  timestamp: Date;
+};
+
+type SearchResult = {
+  results?: {
+    accounts?: {
+      username: string;
+      bio?: string;
+      followerCount?: number;
+      fcCred?: number;
+      state?: string;
+      city?: string;
+      country?: string;
+      score?: number;
+      profileUrl?: string;
+      [key: string]: any;
+    }[];
+    casts?: {
+      username: string;
+      text?: string;
+      castContent?: string;
+      timestamp?: string;
+      likesCount?: number;
+      mentionedChannels?: string[];
+      mentionedUsers?: string[];
+      score?: number;
+      castUrl?: string;
+      authorProfileUrl?: string;
+      [key: string]: any;
+    }[];
+  };
+  query?: string;
+  [key: string]: any;
+};
+
+/**
+ * Extract all usernames from search results
+ */
+function extractUsernames(results: SearchResult): string[] {
+  const usernames: string[] = [];
+  
+  // Extract from accounts
+  if (results?.results?.accounts && Array.isArray(results.results.accounts)) {
+    results.results.accounts.forEach(account => {
+      if (account.username) usernames.push(account.username);
+    });
+  }
+  
+  // Extract from casts
+  if (results?.results?.casts && Array.isArray(results.results.casts)) {
+    results.results.casts.forEach(cast => {
+      if (cast.username) usernames.push(cast.username);
+      
+      // Also add mentioned users
+      if (cast.mentionedUsers && Array.isArray(cast.mentionedUsers)) {
+        cast.mentionedUsers.forEach(user => {
+          if (typeof user === 'string') usernames.push(user);
+        });
+      }
+    });
+  }
+  
+  return Array.from(new Set(usernames));
+}
 
 export default function SearchInterface({ userFid, userName, displayName }) {
   const [query, setQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
+  const [isAgentProcessing, setIsAgentProcessing] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [agentReport, setAgentReport] = useState<string>('');
   const [darkMode, setDarkMode] = useState(true);
-  const inputRef = useRef(null);
+  const [typewriterText, setTypewriterText] = useState('');
+  const [typewriterIndex, setTypewriterIndex] = useState(0);
+  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [results, setResults] = useState<SearchResult>({});
+  const [showLogs, setShowLogs] = useState(false);
+  const [expandLogs, setExpandLogs] = useState(false);
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [countdownSeconds, setCountdownSeconds] = useState<number | null>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const logsEndRef = useRef<HTMLDivElement>(null);
+
+  // Set dark mode by default
+  useEffect(() => {
+    setDarkMode(true);
+  }, []);
 
   // Focus the input on component mount
   useEffect(() => {
@@ -17,6 +103,42 @@ export default function SearchInterface({ userFid, userName, displayName }) {
       inputRef.current.focus();
     }
   }, []);
+
+  // Scroll logs to bottom when new logs are added
+  useEffect(() => {
+    if (logsEndRef.current) {
+      logsEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [logs]);
+
+  // Typewriter effect when searching - faster speed (50ms instead of 100ms)
+  useEffect(() => {
+    if (isSearching && typewriterIndex < query.length) {
+      const timer = setTimeout(() => {
+        setTypewriterText(prev => prev + query.charAt(typewriterIndex));
+        setTypewriterIndex(prev => prev + 1);
+      }, 50);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isSearching, typewriterIndex, query]);
+
+  // Countdown timer effect
+  useEffect(() => {
+    if (countdownSeconds !== null && countdownSeconds > 0) {
+      const timer = setTimeout(() => {
+        setCountdownSeconds(countdownSeconds - 1);
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [countdownSeconds]);
+
+  // Add a log entry
+  const addLog = (message: string, type: 'info' | 'error' | 'success' | 'warning' = 'info') => {
+    setLogs(prev => [...prev, { message, type, timestamp: new Date() }]);
+    setShowLogs(true);
+  };
 
   // Handle input change and auto-resize
   const handleInputChange = (e) => {
@@ -29,15 +151,36 @@ export default function SearchInterface({ userFid, userName, displayName }) {
     }
   };
 
-  const handleSearch = async (e) => {
+  // Handle adding the frame
+  const handleAddFrame = async () => {
+    try {
+      await sdk.actions.addFrame();
+      console.log('App was added successfully');
+      addLog('App was added to Warpcast', 'success');
+    } catch (error) {
+      console.error('Failed to add frame:', error);
+      addLog('Failed to add app to Warpcast', 'error');
+    }
+  };
+
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!query.trim() || isSearching) return;
     
+    // Reset state
     setIsSearching(true);
     setIsCompleted(false);
+    setTypewriterText('');
+    setTypewriterIndex(0);
+    setAgentReport('');
+    setLogs([]);
+    setShowLogs(true);
+    setShareUrl(null);
+    
+    addLog(`Starting search for query: "${query.trim()}"`, 'info');
     
     try {
-      // Make the actual API call to your search endpoint
+      addLog('Calling search API...', 'info');
       const response = await fetch('/api/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -45,22 +188,47 @@ export default function SearchInterface({ userFid, userName, displayName }) {
       });
       
       if (!response.ok) {
+        addLog(`Search API error: ${response.status}`, 'error');
         throw new Error(`Error: ${response.status}`);
       }
       
       const data = await response.json();
       
-      // Process the search results
+      // Log basic results (updated for structured format)
       const accountsCount = data.results?.accounts?.length || 0;
       const castsCount = data.results?.casts?.length || 0;
       
-      console.log(`Search returned ${accountsCount} accounts and ${castsCount} casts`);
-      
-      // TODO: Process the results as needed for your app
-      
-      // Additional processing with your agent API if needed
       if (accountsCount > 0 || castsCount > 0) {
+        addLog(`Search complete - found ${accountsCount} accounts and ${castsCount} casts`, 'success');
+        
+        // Sample logging for first account result if available
+        if (accountsCount > 0) {
+          const firstAccount = data.results.accounts[0];
+          addLog(`Top account match: ${firstAccount.username || 'Unknown'}`, 'info');
+        }
+        
+        // Sample logging for first cast result if available
+        if (castsCount > 0) {
+          const firstCast = data.results.casts[0];
+          addLog(`Top cast match: from ${firstCast.username || 'Unknown'}`, 'info');
+        }
+      } else {
+        addLog(`Search complete - no matching accounts or casts found`, 'warning');
+      }
+      
+      setResults(data || { results: { accounts: [], casts: [] } });
+      setIsSearching(false);
+      setIsCompleted(true);
+      
+      // Process with agent if we have any results
+      if (accountsCount > 0 || castsCount > 0) {
+        setIsAgentProcessing(true);
+        addLog(`Starting agent analysis of ${accountsCount} accounts and ${castsCount} casts...`, 'info');
+        // Start countdown from 15 seconds
+        setCountdownSeconds(15);
+        
         try {
+          // Call the agent API with the structured format
           const agentResponse = await fetch('/api/agent/process', {
             method: 'POST',
             headers: {
@@ -77,30 +245,77 @@ export default function SearchInterface({ userFid, userName, displayName }) {
             throw new Error(`Agent API error: ${agentResponse.status}`);
           }
           
-          // Process the agent response
-          // TODO: Handle the agent response as needed
+          // Process the streaming response
+          const reader = agentResponse.body?.getReader();
+          const decoder = new TextDecoder();
+          
+          if (reader) {
+            let reportContent = '';
+            
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              
+              // Decode and add to the report content
+              const chunk = decoder.decode(value, { stream: true });
+              
+              // Parse SSE format
+              const lines = chunk.split('\n');
+              for (const line of lines) {
+                if (line.startsWith('data:')) {
+                  try {
+                    const content = line.substring(5).trim();
+                    if (content === '[DONE]') continue;
+                    if (content === ':keep-alive') continue;
+                    
+                    const jsonData = JSON.parse(content);
+                    if (jsonData.choices && jsonData.choices[0].delta && jsonData.choices[0].delta.content) {
+                      const textChunk = jsonData.choices[0].delta.content;
+                      // Filter out ":keep-alive" from the streaming text
+                      if (textChunk !== ":keep-alive") {
+                        reportContent += textChunk;
+                        setAgentReport(reportContent);
+                      }
+                    }
+                  } catch (e) {
+                    // Fallback for non-JSON data
+                    const textContent = line.substring(5).trim();
+                    if (textContent && textContent !== '[DONE]' && textContent !== ":keep-alive") {
+                      reportContent += textContent;
+                      setAgentReport(reportContent);
+                    }
+                  }
+                }
+              }
+            }
+            
+            addLog(`Agent analysis complete - generated report`, 'success');
+          }
           
         } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          addLog(`Agent processing error: ${errorMessage}`, 'error');
           console.error('Agent processing error:', error);
+        } finally {
+          setIsAgentProcessing(false);
+          setCountdownSeconds(null);
         }
+      } else {
+        addLog('No results to analyze', 'warning');
       }
       
-      setIsCompleted(true);
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      addLog(`Search error: ${errorMessage}`, 'error');
       console.error('Search error:', error);
-    } finally {
       setIsSearching(false);
     }
   };
 
-  // Handle adding the frame
-  const handleAddFrame = async () => {
-    try {
-      await sdk.actions.addFrame();
-      console.log('App was added successfully');
-    } catch (error) {
-      console.error('Failed to add frame:', error);
-    }
+  // Handle successful share
+  const handleShareSuccess = (url: string) => {
+    setShareUrl(url);
+    addLog('Share URL created and copied to clipboard', 'success');
   };
 
   // Get dynamic background and text colors based on theme
@@ -148,16 +363,17 @@ export default function SearchInterface({ userFid, userName, displayName }) {
       {/* Main content area */}
       <main className="flex-1 w-full max-w-md mx-auto px-5 pt-4 pb-6 flex flex-col">
         {/* App Title */}
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold mb-1">Census Farcaster</h1>
-          <h2 className="text-xl font-medium mb-3">App</h2>
+        <div className="mb-6 text-center">
+          <h1 className="text-2xl font-bold mb-1">Quotient</h1>
+          <p className={`text-sm ${mutedTextColor}`}>
+            Farcaster Research Agent
+          </p>
           {userName && (
-            <p className={`text-sm ${mutedTextColor} font-mono`}>
-              Welcome, {displayName || userName}
+            <p className={`text-xs ${mutedTextColor} font-mono mt-2`}>
+              Welcome, {displayName || userName || 'Explorer'}
             </p>
           )}
         </div>
-        
         {/* Search card */}
         <div className={`${cardBg} rounded-xl border ${borderColor} p-5 shadow-sm mb-6`}>
           <div className="mb-4">
@@ -179,7 +395,7 @@ export default function SearchInterface({ userFid, userName, displayName }) {
                 value={query}
                 onChange={handleInputChange}
                 placeholder="e.g. Who is building dev tools for prediction markets?"
-                disabled={isSearching}
+                disabled={isSearching || isAgentProcessing}
                 className={`w-full ${inputBg} border ${borderColor} rounded-xl p-4 pr-12 ${textColor} focus:outline-none focus:ring-1 focus:ring-blue-500 ${placeholderColor} text-sm resize-none overflow-hidden min-h-[60px]`}
                 rows={2}
                 onKeyDown={(e) => {
@@ -194,9 +410,9 @@ export default function SearchInterface({ userFid, userName, displayName }) {
               <button
                 type="button"
                 onClick={handleSearch}
-                disabled={isSearching || !query.trim()}
+                disabled={isSearching || isAgentProcessing || !query.trim()}
                 className={`absolute right-3 bottom-3 rounded-lg p-2 transition-colors focus:outline-none
-                ${isSearching || !query.trim() 
+                ${isSearching || isAgentProcessing || !query.trim() 
                   ? 'bg-[#2a2a35] text-gray-500 cursor-not-allowed' 
                   : 'bg-blue-600 text-white hover:bg-blue-700'}`}
                 aria-label="Execute query"
@@ -219,12 +435,32 @@ export default function SearchInterface({ userFid, userName, displayName }) {
             </div>
           </div>
           
+          {/* Typewriter effect - for when searching */}
+          {isSearching && (
+            <div className="mt-3 mb-2 font-mono text-sm text-blue-400 border-l-2 border-blue-500 pl-3 overflow-hidden">
+              <span className="inline-block">{typewriterText}</span>
+              <span className="inline-block w-1.5 h-3.5 bg-blue-500 ml-0.5 animate-pulse"></span>
+            </div>
+          )}
+          
+          {/* Countdown timer for report completion */}
+          {countdownSeconds !== null && (
+            <div className="mt-3 mb-2 font-mono text-sm text-purple-400 border-l-2 border-purple-500 pl-3">
+              <span>Expected report completion in {countdownSeconds} seconds</span>
+            </div>
+          )}
+          
           {/* Search status */}
           <div className={`flex items-center text-xs ${mutedTextColor} mt-3`}>
             {isSearching ? (
               <>
                 <span className="w-2 h-2 bg-blue-500 rounded-full mr-2 animate-pulse"></span>
                 <span>Searching...</span>
+              </>
+            ) : isAgentProcessing ? (
+              <>
+                <span className="w-2 h-2 bg-purple-500 rounded-full mr-2 animate-pulse"></span>
+                <span>Analyzing results with agent...</span>
               </>
             ) : isCompleted ? (
               <>
@@ -238,10 +474,91 @@ export default function SearchInterface({ userFid, userName, displayName }) {
               </>
             )}
           </div>
+          
+          {/* Logs section */}
+          {logs.length > 0 && showLogs && (
+            <div className={`mt-3 ${darkMode ? 'bg-[#1a1a25]' : 'bg-gray-50'} rounded-lg p-3 font-mono text-xs`}>
+              {/* Show just the most recent log, or all if expanded */}
+              {(expandLogs ? logs : logs.slice(-1)).map((log, index) => {
+                let logColor;
+                let logIcon;
+                
+                switch(log.type) {
+                  case 'error':
+                    logColor = darkMode ? 'text-red-300' : 'text-red-600';
+                    logIcon = '✕';
+                    break;
+                  case 'warning':
+                    logColor = darkMode ? 'text-yellow-300' : 'text-yellow-600';
+                    logIcon = '⚠';
+                    break;
+                  case 'success':
+                    logColor = darkMode ? 'text-green-300' : 'text-green-600';
+                    logIcon = '✓';
+                    break;
+                  default:
+                    logColor = darkMode ? 'text-blue-300' : 'text-blue-600';
+                    logIcon = '•';
+                }
+                
+                return (
+                  <div key={index} className={`mb-1 flex items-start ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    <span className={`${logColor} mr-1`}>{logIcon}</span>
+                    <span className="opacity-60 mr-2 text-xs">
+                      {log.timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'})}
+                    </span>
+                    <span className={log.type === 'error' ? logColor : ''}>{log.message}</span>
+                  </div>
+                );
+              })}
+              
+              {/* Toggle for showing more logs */}
+              {logs.length > 1 && (
+                <div className="mt-1 flex justify-between items-center">
+                  <button 
+                    onClick={() => setExpandLogs(!expandLogs)}
+                    className={`text-xs ${darkMode ? 'text-blue-300 hover:text-blue-200' : 'text-blue-600 hover:text-blue-500'} transition-colors focus:outline-none`}
+                  >
+                    {expandLogs ? 'Show less' : `+${logs.length - 1} more`}
+                  </button>
+                  
+                  <button 
+                    onClick={() => setShowLogs(false)}
+                    className={`text-xs ${darkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-400'} transition-colors focus:outline-none`}
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
+              
+              <div ref={logsEndRef} />
+            </div>
+          )}
         </div>
         
+        {/* Agent Results */}
+        {(isAgentProcessing || agentReport) && (
+          <AgentReport 
+            report={agentReport}
+            darkMode={darkMode}
+            isLoading={isAgentProcessing && !agentReport}
+          />
+        )}
+        
+        {/* Share Button */}
+        {agentReport && !isAgentProcessing && (
+          <ShareButton 
+            query={query}
+            results={results}
+            agentReport={agentReport}
+            onShareSuccess={handleShareSuccess}
+            darkMode={darkMode}
+            shareUrl={shareUrl}
+          />
+        )}
+        
         {/* Support banner at bottom */}
-        <div className="mt-auto">
+        <div className="mt-auto pt-4">
           <a
             href="https://www.sidequest.build/quotient"
             target="_blank"
