@@ -92,7 +92,7 @@ export async function POST(request: Request) {
     CALL db.index.fulltext.queryNodes('casts', $effectiveQuery) YIELD node as castNode, score as score 
     WHERE score >= 5
     ORDER BY score DESC 
-    LIMIT 200
+    LIMIT 175
     MATCH (castNode)-[]-(real:RealAssNigga:Account)
     WITH 
       castNode.author as username,
