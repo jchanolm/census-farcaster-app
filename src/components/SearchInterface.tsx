@@ -256,7 +256,7 @@ export default function SearchInterface({ userFid, userName, displayName }) {
               const { done, value } = await reader.read();
               if (done) break;
               
-              // Decode and add to the report content
+              // Decode and add to the content
               const chunk = decoder.decode(value, { stream: true });
               
               // Parse SSE format
@@ -275,6 +275,10 @@ export default function SearchInterface({ userFid, userName, displayName }) {
                       if (textChunk !== ":keep-alive") {
                         reportContent += textChunk;
                         setAgentReport(reportContent);
+                        // Clear countdown once we start getting report content
+                        if (countdownSeconds !== null) {
+                          setCountdownSeconds(null);
+                        }
                       }
                     }
                   } catch (e) {
@@ -283,6 +287,10 @@ export default function SearchInterface({ userFid, userName, displayName }) {
                     if (textContent && textContent !== '[DONE]' && textContent !== ":keep-alive") {
                       reportContent += textContent;
                       setAgentReport(reportContent);
+                      // Clear countdown once we start getting report content
+                      if (countdownSeconds !== null) {
+                        setCountdownSeconds(null);
+                      }
                     }
                   }
                 }
@@ -454,6 +462,11 @@ export default function SearchInterface({ userFid, userName, displayName }) {
               <>
                 <span className="w-2 h-2 bg-purple-500 rounded-full mr-2 animate-pulse"></span>
                 <span>Analyzing results with agent...</span>
+                {countdownSeconds !== null && (
+                  <span className="ml-1 text-purple-400">
+                    (expected in {countdownSeconds}s)
+                  </span>
+                )}
               </>
             ) : isCompleted ? (
               <>
