@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { sdk } from '@farcaster/frame-sdk';
 import AddFrameButton from '@/components/AddFrameButton';
 import SidekickBanner from '@/components/SidekickBanner';
 import AgentReport from './AgentReport';
@@ -75,7 +74,13 @@ function extractUsernames(results: SearchResult): string[] {
   return Array.from(new Set(usernames));
 }
 
-export default function SearchInterface() {
+interface SearchInterfaceProps {
+  userFid?: number;
+  userName?: string;
+  displayName?: string;
+}
+
+export default function SearchInterface({ userFid, userName, displayName }: SearchInterfaceProps) {
   const [query, setQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [isAgentProcessing, setIsAgentProcessing] = useState(false);
@@ -342,8 +347,10 @@ export default function SearchInterface() {
       {/* Main search area */}
       <main className="pt-2 px-6 md:px-14 w-full max-w-5xl mx-auto">
         <div className="mb-6 text-center">
-          <h1 className="text-3xl md:text-4xl font-bold mb-2">Quotient Farcaster Research Agent</h1>
-          <p className={`text-sm ${textMutedColor} font-mono`}>Find Your (Onchain) People</p>
+          <h1 className="text-3xl md:text-4xl font-bold mb-2">Census Farcaster App</h1>
+          <p className={`text-sm ${textMutedColor} font-mono`}>
+            {userFid ? `Welcome, ${displayName || userName || `FID: ${userFid}`}` : 'Find Your Census Data'}
+          </p>
         </div>
         
         {/* Search box */}
