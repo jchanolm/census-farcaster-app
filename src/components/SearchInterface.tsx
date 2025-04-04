@@ -36,11 +36,61 @@ export default function SearchInterface({ userFid, userName, displayName }) {
     setIsSearching(true);
     setIsCompleted(false);
     
-    // Simulate search for demo purposes
-    setTimeout(() => {
-      setIsSearching(false);
+    try {
+      // Make the actual API call to your search endpoint
+      const response = await fetch('/api/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: query.trim() })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // Process the search results
+      const accountsCount = data.results?.accounts?.length || 0;
+      const castsCount = data.results?.casts?.length || 0;
+      
+      console.log(`Search returned ${accountsCount} accounts and ${castsCount} casts`);
+      
+      // TODO: Process the results as needed for your app
+      
+      // Additional processing with your agent API if needed
+      if (accountsCount > 0 || castsCount > 0) {
+        try {
+          const agentResponse = await fetch('/api/agent/process', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 
+              originalQuery: query, 
+              query: data.query,
+              results: data.results 
+            }),
+          });
+          
+          if (!agentResponse.ok) {
+            throw new Error(`Agent API error: ${agentResponse.status}`);
+          }
+          
+          // Process the agent response
+          // TODO: Handle the agent response as needed
+          
+        } catch (error) {
+          console.error('Agent processing error:', error);
+        }
+      }
+      
       setIsCompleted(true);
-    }, 2000);
+    } catch (error) {
+      console.error('Search error:', error);
+    } finally {
+      setIsSearching(false);
+    }
   };
 
   // Handle adding the frame
@@ -179,7 +229,7 @@ export default function SearchInterface({ userFid, userName, displayName }) {
             ) : isCompleted ? (
               <>
                 <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                <span>Query complete.</span>
+                <span>Query completed.</span>
               </>
             ) : (
               <>
