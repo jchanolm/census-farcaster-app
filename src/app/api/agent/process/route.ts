@@ -150,7 +150,7 @@ The search results are organized into two sections:
    1. **Executive Summary**  
       - High-level overview (2-3 key findings addressing the query).
    2. **Notable Builders & Projects & Concepts**  
-      - Mention 3-7 relevant builders or projects.
+      - Mention 4-6 relevant builders or projects.
       - Cite casts, including quotes + castUrl
       - Include specific evidence, expertise, and connections to the query.
       - Link to their profile using \`[username](authorProfileUrl)\`.
