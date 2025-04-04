@@ -362,7 +362,7 @@ export default function SearchInterface() {
                 ref={inputRef}
                 value={query}
                 onChange={handleInputChange}
-                placeholder="e.g. Which Farcaster frames / mini apps devs should Balaji reach out to for Network School...?"
+                placeholder="e.g. Who is building dev tools for prediction markets...?"
                 disabled={isSearching || isAgentProcessing}
                 className={`w-full ${inputBg} border ${borderColor} rounded p-4 ${textColor} focus:outline-none focus:ring-1 focus:ring-blue-500 ${placeholderColor} font-mono text-sm resize-none overflow-hidden min-h-[60px]`}
                 rows={1}
