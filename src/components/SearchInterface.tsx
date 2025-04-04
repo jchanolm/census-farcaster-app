@@ -342,8 +342,8 @@ export default function SearchInterface() {
       {/* Main search area */}
       <main className="pt-2 px-6 md:px-14 w-full max-w-5xl mx-auto">
         <div className="mb-6 text-center">
-          <h1 className="text-3xl md:text-4xl font-bold mb-2">Quotient</h1>
-          <p className={`text-sm ${textMutedColor} font-mono`}>Deep Research for Onchain Builders</p>
+          <h1 className="text-3xl md:text-4xl font-bold mb-2">Quotient Farcaster Research Agent</h1>
+          <p className={`text-sm ${textMutedColor} font-mono`}>Find Your (Onchain) People</p>
         </div>
         
         {/* Search box */}
