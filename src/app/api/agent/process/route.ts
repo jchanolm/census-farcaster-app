@@ -111,10 +111,10 @@ function formatPrompt(query: string, results: any) {
   // Add explicit instructions for linking with CLEAR distinction between cast URLs and profile URLs
   const linkingInstructions = `
 # LINKING INSTRUCTIONS
-- When mentioning a Farcaster user, use the format \`[username](profileUrl)\` where profileUrl is the user's profile URL (authorProfileUrl).
-- When quoting a cast, ALWAYS end with \`[View cast](castUrl)\` where castUrl is the URL for that specific cast, NOT the author's profile.
-- IMPORTANT: castUrl and authorProfileUrl are DIFFERENT. Use castUrl to link to a specific cast, not the user's profile.
-- For any users mentioned in cast content, find their profile URL if available and convert mentions to links.
+- When mentioning a Farcaster user, use the format \`[username](authorProfileUrl)\` where authorProfileUrl is the user's profile URL.
+- When quoting a cast, ALWAYS end with \`[View cast](castUrl)\` where castUrl is the URL for that specific cast.
+- IMPORTANT: castUrl and authorProfileUrl are DIFFERENT. Never confuse them - use castUrl only for linking to specific casts, authorProfileUrl only for user profiles.
+- For any users mentioned in cast content, convert mentions to links using their profile URLs when available.
 - EXAMPLES:
   - User reference: \`[${sortedAccounts[0]?.username || 'username'}](${sortedAccounts[0]?.profileUrl || 'https://warpcast.com/username'})\`
   - Cast quote: \`> This is a quote from a cast [View cast](${sortedCasts[0]?.castUrl || 'https://warpcast.com/username/hash'})\`
@@ -155,7 +155,6 @@ The search results are organized into two sections:
    - **authorProfileUrl:** URL for the author's profile  
 
 ${linkingInstructions}
-
 # RESPONSE GUIDELINES
 1. **Understand the Query**
    - For hiring or recruiting, identify new potential candidates with relevant expertise (not already part of the organization).
@@ -172,6 +171,7 @@ ${linkingInstructions}
    - Emphasize high-engagement users and timely information.
    - Identify notable patterns or connections across multiple sources.
    - Avoid speculation; stay factual and relevant.
+   - If no relevant information is found, clearly state "wasn't able to retrieve any relevant info"
 
 3. **Linking Rules**
    - When mentioning a user, link to their profile URL: \`[username](authorProfileUrl)\`

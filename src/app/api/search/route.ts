@@ -92,7 +92,7 @@ export async function POST(request: Request) {
     CALL db.index.fulltext.queryNodes('casts', $effectiveQuery) YIELD node as castNode, score as score 
     WHERE score >= 5
     ORDER BY score DESC 
-    LIMIT 250
+    LIMIT 200
     MATCH (castNode)-[]-(real:RealAssNigga:Account)
     WITH 
       castNode.author as username,
@@ -142,7 +142,7 @@ export async function POST(request: Request) {
       'account_match' as matchType
     RETURN username, bio, followerCount, fcCred, state, city, country, pfpUrl, castContent, timestamp, likesCount, mentionedChannels, mentionedUsers, score, matchType
     ORDER BY score DESC
-    LIMIT 5
+    LIMIT 3
     `;
     
     console.log('Running vector search queries...');
