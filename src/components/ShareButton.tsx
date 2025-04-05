@@ -21,6 +21,7 @@ export default function ShareButton({
 }: ShareButtonProps) {
   const [isSharing, setIsSharing] = useState(false);
   const [showCopyConfirmation, setShowCopyConfirmation] = useState(false);
+  const [showShareConfirmation, setShowShareConfirmation] = useState(false);
   
   // Create shareable URL
   const handleShare = async () => {
@@ -51,6 +52,10 @@ export default function ShareButton({
       // Copy to clipboard
       await navigator.clipboard.writeText(fullUrl);
       
+      // Show confirmation
+      setShowShareConfirmation(true);
+      setTimeout(() => setShowShareConfirmation(false), 3000);
+      
       // Call the success handler
       onShareSuccess(fullUrl);
       
@@ -77,7 +82,7 @@ export default function ShareButton({
     <>
       {/* Share button */}
       {!shareUrl && (
-        <div className="flex justify-end w-full mb-4">
+        <div className="flex justify-end w-full mb-4 relative">
           <button
             onClick={handleShare}
             disabled={isSharing}
@@ -97,6 +102,16 @@ export default function ShareButton({
               </>
             )}
           </button>
+          
+          {/* Share success confirmation */}
+          {showShareConfirmation && (
+            <div className="absolute top-full right-0 mt-2 py-2 px-3 bg-black bg-opacity-80 text-white text-xs rounded-md shadow-lg transition-opacity duration-300 flex items-center">
+              <svg className="w-3.5 h-3.5 mr-2 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+              Link copied to clipboard
+            </div>
+          )}
         </div>
       )}
       
@@ -118,8 +133,11 @@ export default function ShareButton({
                 </svg>
               </button>
               {showCopyConfirmation && (
-                <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-green-500 text-white text-xs py-1 px-2 rounded shadow-md animate-fade-in-out">
-                  Copied!
+                <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-80 text-white text-xs py-1.5 px-2.5 rounded shadow-md flex items-center">
+                  <svg className="w-3 h-3 mr-1.5 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  Copied
                 </div>
               )}
             </div>
