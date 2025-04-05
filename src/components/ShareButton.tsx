@@ -54,7 +54,7 @@ export default function ShareButton({
       
       // Show confirmation
       setShowShareConfirmation(true);
-      setTimeout(() => setShowShareConfirmation(false), 3000);
+      setTimeout(() => setShowShareConfirmation(false), 4000);
       
       // Call the success handler
       onShareSuccess(fullUrl);
@@ -103,13 +103,27 @@ export default function ShareButton({
             )}
           </button>
           
-          {/* Share success confirmation */}
+          {/* Share success confirmation - enhanced version */}
           {showShareConfirmation && (
-            <div className="absolute top-full right-0 mt-2 py-2 px-3 bg-black bg-opacity-80 text-white text-xs rounded-md shadow-lg transition-opacity duration-300 flex items-center">
-              <svg className="w-3.5 h-3.5 mr-2 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-              Link copied to clipboard
+            <div className="fixed inset-0 flex items-center justify-center z-50">
+              <div className="absolute inset-0 bg-black bg-opacity-30" onClick={() => setShowShareConfirmation(false)}></div>
+              <div className={`${darkMode ? 'bg-[#1a1a25] text-white' : 'bg-white text-gray-800'} rounded-xl shadow-xl p-5 max-w-xs w-full mx-auto z-10 transform transition-all animate-fadeIn border ${borderColor}`}>
+                <div className="flex flex-col items-center text-center">
+                  <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mb-4">
+                    <svg className="w-8 h-8 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-bold mb-1">Shared Successfully!</h3>
+                  <p className="text-sm opacity-80 mb-3">Link has been copied to your clipboard</p>
+                  <button 
+                    onClick={() => setShowShareConfirmation(false)}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-colors w-full"
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>

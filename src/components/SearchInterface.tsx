@@ -324,6 +324,14 @@ export default function SearchInterface({ userFid, userName, displayName }) {
   const handleShareSuccess = (url: string) => {
     setShareUrl(url);
     addLog('Share URL created and copied to clipboard', 'success');
+    
+    // Also scroll to the share section to make sure user sees the URL
+    setTimeout(() => {
+      window.scrollTo({
+        top: document.body.scrollHeight,
+        behavior: 'smooth'
+      });
+    }, 100);
   };
 
   // Get dynamic background and text colors based on theme
