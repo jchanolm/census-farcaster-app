@@ -216,6 +216,7 @@ ${linkingInstructions}
 # PERSON-SPECIFIC QUERY HANDLING
 - If the query is about a specific person (e.g., "tell me about username"), ONLY include:
   - Casts authored by that specific person
+  - Never return dwr, ted, rish, or proxystudio as a result unless there's no way to answer question without mentioning them
   - Casts that explicitly mention or discuss that specific person
   - Do NOT include casts that merely contain the person's name/username in an unrelated context
   - If you're unsure whether a cast is actually about the person in question, exclude it
