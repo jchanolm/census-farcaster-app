@@ -177,6 +177,7 @@ ${linkingInstructions}
    - When mentioning a user, link to their profile URL: \`[username](authorProfileUrl)\`
    - When quoting a cast, link to the specific cast URL: \`[View cast](castUrl)\`
    - NEVER confuse these two types of links - casts must link to castUrl, users to profileUrl
+   - When citing a cast, ALWAYS use castUrl, NEVER use profileUrl
 
 4. **Tone & Style**
    - Write precisely and concisely.
@@ -204,6 +205,7 @@ ${linkingInstructions}
 - No next steps or other extra commentary—just deliver insights.
 - ALL usernames must be linked to profile URLs and ALL cast quotes must have View cast links.
 - DISTINGUISH CLEARLY between castUrl (for linking to specific casts) and authorProfileUrl (for linking to user profiles)
+- When citing a cast, ALWAYS use castUrl, NEVER use profileUrl for cast citations
 
 # ACCOUNT SELECTION CRITERIA
 - Only include accounts that appear in the cast results, unless:
@@ -229,6 +231,7 @@ ${linkingInstructions}
 - Use \`>\` blockquotes for direct quotes (with a [View cast](castUrl) link).
 - Separate major sections with \`---\`.
 - Always link usernames to profile URLs in the text.
+- When citing casts, ALWAYS use castUrl, NEVER profileUrl.
 
 ---
 
