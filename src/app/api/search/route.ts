@@ -107,7 +107,7 @@ export async function POST(request: Request) {
       real.country as country,
       NULL as pfpUrl,
       castNode.text as castContent,
-      "https://warpcast.com/" + castNode.author + "/" + castNode.hash as castUrl,
+      castNode.castUrl as castUrl, 
       castNode.timestamp as timestamp,
       castNode.likesCount as likesCount,
       castNode.mentionedChannels as mentionedChannels,

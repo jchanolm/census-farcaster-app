@@ -63,19 +63,12 @@ function formatPrompt(query: string, results: any) {
     const timestamp = cast.timestamp || '';
     const hash = cast.hash || '';
     
-    // IMPORTANT: Ensure castUrl is properly formatted for SPECIFIC CASTS
-    // This should link to the specific cast, not the user's profile
-    let castUrl = cast.castUrl || '';
-    if (!castUrl || !castUrl.startsWith('http')) {
-      // If no hash available, we can't properly link to the cast
-      castUrl = hash 
-        ? `https://warpcast.com/${username}/${hash}` 
-        : `https://warpcast.com/${username}`;
-    }
+    // Use the castUrl directly from the cast data
+    const castUrl = cast.castUrl || '';
     
     // Ensure authorProfileUrl is properly formatted - separate from castUrl
     let authorProfileUrl = cast.authorProfileUrl || '';
-    if (!authorProfileUrl || !authorProfileUrl.startsWith('http')) {
+    if (!authorProfileUrl || !authorProfileUrl.startsWith('https')) {
       authorProfileUrl = `https://warpcast.com/${username}`;
     }
     
