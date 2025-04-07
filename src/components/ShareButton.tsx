@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 interface ShareButtonProps {
   query: string;
@@ -21,7 +21,6 @@ export default function ShareButton({
 }: ShareButtonProps) {
   const [isSharing, setIsSharing] = useState(false);
   const [showCopyConfirmation, setShowCopyConfirmation] = useState(false);
-  const [showShareConfirmation, setShowShareConfirmation] = useState(false);
   
   // Create shareable URL
   const handleShare = async () => {
@@ -47,20 +46,23 @@ export default function ShareButton({
       const data = await response.json();
       
       // Build the full URL
-      const fullUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/s/${data.id}`;
+      const baseUrl = window.location.origin;
+      const fullUrl = `${baseUrl}/s/${data.id}`;
       
       // Copy to clipboard
-      await navigator.clipboard.writeText(fullUrl);
-      
-      // Show confirmation
-      setShowShareConfirmation(true);
-      setTimeout(() => setShowShareConfirmation(false), 4000);
-      
-      // Call the success handler
-      onShareSuccess(fullUrl);
+      try {
+        await navigator.clipboard.writeText(fullUrl);
+        // Call the success handler with the URL
+        onShareSuccess(fullUrl);
+      } catch (clipboardError) {
+        console.error('Clipboard error:', clipboardError);
+        // Still call success handler even if clipboard fails
+        onShareSuccess(fullUrl);
+      }
       
     } catch (error) {
       console.error('Share error:', error);
+      alert('Failed to create share link. Please try again.');
     } finally {
       setIsSharing(false);
     }
@@ -68,9 +70,14 @@ export default function ShareButton({
 
   const handleCopyToClipboard = async () => {
     if (shareUrl) {
-      await navigator.clipboard.writeText(shareUrl);
-      setShowCopyConfirmation(true);
-      setTimeout(() => setShowCopyConfirmation(false), 2000);
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        setShowCopyConfirmation(true);
+        setTimeout(() => setShowCopyConfirmation(false), 2000);
+      } catch (error) {
+        console.error('Clipboard error:', error);
+        alert('Failed to copy to clipboard. Please try again.');
+      }
     }
   };
   
@@ -82,7 +89,7 @@ export default function ShareButton({
     <>
       {/* Share button */}
       {!shareUrl && (
-        <div className="flex justify-end w-full mb-4 relative">
+        <div className="flex justify-end w-full mb-4">
           <button
             onClick={handleShare}
             disabled={isSharing}
@@ -102,30 +109,6 @@ export default function ShareButton({
               </>
             )}
           </button>
-          
-          {/* Share success confirmation - enhanced version */}
-          {showShareConfirmation && (
-            <div className="fixed inset-0 flex items-center justify-center z-50">
-              <div className="absolute inset-0 bg-black bg-opacity-30" onClick={() => setShowShareConfirmation(false)}></div>
-              <div className={`${darkMode ? 'bg-[#1a1a25] text-white' : 'bg-white text-gray-800'} rounded-xl shadow-xl p-5 max-w-xs w-full mx-auto z-10 transform transition-all animate-fadeIn border ${borderColor}`}>
-                <div className="flex flex-col items-center text-center">
-                  <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mb-4">
-                    <svg className="w-8 h-8 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <h3 className="text-lg font-bold mb-1">Shared Successfully!</h3>
-                  <p className="text-sm opacity-80 mb-3">Link has been copied to your clipboard</p>
-                  <button 
-                    onClick={() => setShowShareConfirmation(false)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-colors w-full"
-                  >
-                    Done
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       )}
       
