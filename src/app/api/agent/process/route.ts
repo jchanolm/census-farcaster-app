@@ -182,11 +182,11 @@ ${linkingInstructions}
    1. **Executive Summary**  
       - High-level overview (2-3 key findings addressing the query).
    2. **Notable Builders & Projects & Concepts**  
-      - Mention 4-7 relevant builders or projects.
+      - Discuss the 3-6 most relevant builders or projects.
       - Cite casts, including quotes + castUrl
       - Include specific evidence, expertise, and connections to the query.
       - Link to their profile using \`[username](authorProfileUrl)\`.
-      - If referencing a cast, link to it with \`[View cast](castUrl)\`.
+      - If referencing cast, link to it with \`[View cast](castUrl)\`.
 
 
 # IMPORTANT
