@@ -429,7 +429,7 @@ export default function SearchInterface({ userFid, userName, displayName }) {
                 ref={inputRef}
                 value={query}
                 onChange={handleInputChange}
-                placeholder="e.g. Who is building dev tools for prediction markets?"
+                placeholder="e.g. Who is building prediction markets on Base?"
                 disabled={isSearching || isAgentProcessing}
                 className={`w-full ${inputBg} border ${borderColor} rounded-xl p-4 pr-12 ${textColor} focus:outline-none focus:ring-1 focus:ring-blue-500 ${placeholderColor} text-sm resize-none overflow-hidden min-h-[60px]`}
                 rows={2}

@@ -15,8 +15,6 @@ function computeCombinedScore({
 }
 
 // Format the data for the AI prompt
-// Fixed formatPrompt function with improved cast and user linking
-// Updated formatPrompt function with correct cast URL handling
 function formatPrompt(query: string, results: any) {
   // Ensure results structure exists with defaults
   const { accounts = [], casts = [] } = results;
@@ -36,10 +34,8 @@ function formatPrompt(query: string, results: any) {
       followerCount 
     });
     
-    // Ensure profileUrl is correctly formatted for USER PROFILES
-    const profileUrl = account.profileUrl && account.profileUrl.startsWith('http')
-      ? account.profileUrl
-      : `https://warpcast.com/${username}`;
+    // Generate profile URL (not from data)
+    const profileUrl = `https://warpcast.com/${username}`;
     
     return {
       username,
@@ -57,31 +53,26 @@ function formatPrompt(query: string, results: any) {
   
   // Preprocess cast data to handle any missing fields
   const processedCasts = casts.map(cast => {
-    const username = cast.username || 'unknown';
+    const username = cast.username || cast.author || 'unknown';
     const castContent = cast.text || cast.castContent || '';
-    const likesCount = cast.likesCount || 0;
+    const likesCount = cast.likesCount || cast.likeCount || 0;
     const timestamp = cast.timestamp || '';
     const hash = cast.hash || '';
     
-    // Use the castUrl directly from the cast data
-    const castUrl = cast.castUrl || '';
+    // Generate cast URL (not from data)
+    const castUrl = `https://warpcast.com/${username}/${hash}`;
     
-    // Ensure authorProfileUrl is properly formatted - separate from castUrl
-    let authorProfileUrl = cast.authorProfileUrl || '';
-    if (!authorProfileUrl || !authorProfileUrl.startsWith('https')) {
-      authorProfileUrl = `https://warpcast.com/${username}`;
-    }
+    // Generate author profile URL
+    const authorProfileUrl = `https://warpcast.com/${username}`;
     
-    const mentionedChannels = cast.mentionedChannels || [];
-    const mentionedUsers = cast.mentionedUsers || [];
+    const mentionedChannels = cast.mentionedChannels || cast.mentionedChannelIds || [];
+    const mentionedUsers = cast.mentionedUsers || cast.mentionedUsernames || [];
     const relevanceScore = cast.relevanceScore || cast.score || 0;
-    const followerCount = 0; // or adapt if you store author's follower count
-    const fcCred = 0;       // or adapt if you store author's fcCred
     
     const combinedScore = computeCombinedScore({ 
       relevanceScore, 
-      fcCred,
-      followerCount
+      fcCred: 0,
+      followerCount: 0
     });
     
     return {
@@ -101,130 +92,34 @@ function formatPrompt(query: string, results: any) {
   // Sort casts by combined score for better analysis
   const sortedCasts = processedCasts.sort((a, b) => b.combinedScore - a.combinedScore);
 
-  // Add explicit instructions for linking with CLEAR distinction between cast URLs and profile URLs
-  const linkingInstructions = `
-# LINKING INSTRUCTIONS
-- When mentioning a Farcaster user, use the format \`[username](authorProfileUrl)\` where authorProfileUrl is the user's profile URL.
-- When quoting a cast, ALWAYS end with \`[View cast](castUrl)\` where castUrl is the URL for that specific cast.
-- IMPORTANT: castUrl and authorProfileUrl are DIFFERENT. Never confuse them - use castUrl only for linking to specific casts, authorProfileUrl only for user profiles.
-- For any users mentioned in cast content, convert mentions to links using their profile URLs when available.
-- EXAMPLES:
-  - User reference: \`[${sortedAccounts[0]?.username || 'username'}](${sortedAccounts[0]?.profileUrl || 'https://warpcast.com/username'})\`
-  - Cast quote: \`> This is a quote from a cast [View cast](${sortedCasts[0]?.castUrl || 'https://warpcast.com/username/hash'})\`
-`;
-
   return `
 # MISSION
-You are an intelligence analyst processing Farcaster network data to provide actionable insights—especially for prospecting, recruiting, market research, user discovery, and technical research. While lead generation is the top priority, use your judgment to address the full scope of the user's question.
+You are analyzing Farcaster network data to provide the best possible answer to the user's query.
 
 # CONTEXT
 The user searched for: "${query}"
 
-The dataset includes Farcaster profiles (accounts) and posts (casts). Your goal is to analyze these results and deliver evidence-based insights directly relevant to the user's query.
-
-When referencing accounts, prioritize accounts with fewer than 2,000 followers when possible.
-
-The score is a reference data point for you; use your judgment when deciding who to include and in what order.
+The dataset includes Farcaster profiles (accounts) and posts (casts). Your goal is to analyze these results and deliver the most helpful and complete response directly addressing the query.
 
 # DATA STRUCTURE
-The search results are organized into two sections:
+The search results include:
+- ${sortedAccounts.length} Farcaster user profiles
+- ${sortedCasts.length} Farcaster casts (posts)
 
-1. **ACCOUNTS** (${sortedAccounts.length} results)
-   - **username:** Farcaster handle  
-   - **bio:** Profile description  
-   - **channels:** Channel memberships, indicative of user interests
-   - **fcCred:** Score based on OG engagement  
-   - **followerCount:** Followers  
-   - **profileUrl:** URL to Farcaster profile  
-
-2. **CASTS** (${sortedCasts.length} results)
-   - **username:** Author's Farcaster handle  
-   - **castContent:** Post text  
-   - **likesCount:** Likes on the post  
-   - **timestamp:** Creation time  
-   - **mentionedChannels:** Channels mentioned  
-   - **mentionedUsers:** Users mentioned  
-   - **castUrl:** URL for the specific cast (NOT the author's profile)
-   - **authorProfileUrl:** URL for the author's profile  
-
-${linkingInstructions}
 # RESPONSE GUIDELINES
-1. **Understand the Query**
-   - For hiring or recruiting, identify new potential candidates with relevant expertise (not already part of the organization).
-   - For market research, highlight trends and key user discussions.
-   - If you mention a cast, cite the cast with its castUrl and quote relevant sections
-   - For technical research, present implementation details, challenges, or solutions.
-   - For competitive analysis, compare approaches and unique differentiators.
-   - If the user requests certain exclusions, honor them exactly.
+1. Provide a direct, helpful answer to the user's query.
+2. Reference specific evidence from the search results to support your answer.
+3. Quote relevant casts when they provide useful information.
+4. Mention relevant Farcaster users when appropriate.
+5. When mentioning users, link to their profiles using: [username](https://warpcast.com/username)
+6. When quoting casts, include a link to the cast: [View cast](https://warpcast.com/username/hash)
 
-2. **Analysis Principles**
-   - Base every conclusion on the provided data; cite evidence from bios or casts.
-   - Do not stretch/contrive/make leaps of logic. 
-   - Emphasize information from casts in your analysis; direct quotes from casts accompanied by castUrl are preferred  
-   - Emphasize high-engagement users and timely information.
-   - Identify notable patterns or connections across multiple sources.
-   - Avoid speculation; stay factual and relevant.
-   - If no relevant information is found, clearly state "wasn't able to retrieve any relevant info"
-
-3. **Linking Rules**
-   - When mentioning a user, link to their profile URL: \`[username](authorProfileUrl)\`
-   - When quoting a cast, link to the specific cast URL: \`[View cast](castUrl)\`
-   - NEVER confuse these two types of links - casts must link to castUrl, users to profileUrl
-   - When citing a cast, ALWAYS use castUrl, NEVER use profileUrl
-
-4. **Tone & Style**
-   - Write precisely and concisely.
-   - Focus on relevant details and meaningful insights.
-   - Maintain a professional, factual style; avoid hedging or speculation.
-   - Do not include meta-commentary on data limitations or the analysis process.
-
-5. **Report Structure**
-   1. **Executive Summary**  
-      - High-level overview (2-3 key findings addressing the query).
-   2. **Notable Builders & Projects & Concepts**  
-      - Discuss the 3-6 most relevant builders or projects.
-      - Cite casts, including quotes + castUrl
-      - Include specific evidence, expertise, and connections to the query.
-      - Link to their profile using \`[username](authorProfileUrl)\`.
-      - If referencing cast, link to it with \`[View cast](castUrl)\`.
-
-
-# IMPORTANT
-- Keep Key Findings and Notable Builders sections distinct, with no redundancy.
-- End Report after "Notable Builders & Projects & Concepts". No further notes or asides needed.
-- Give a subtle boost to accounts with relatively fewer followers but higher fcCred. Do NOT EVER SAY YOU ARE DOING THIS.
-- Focus solely on the user's question; omit any references to data volume or provenance.
-- For recruiting, do not list individuals already within the mentioned organization.
-- No next steps or other extra commentary—just deliver insights.
-- ALL usernames must be linked to profile URLs and ALL cast quotes must have View cast links.
-- DISTINGUISH CLEARLY between castUrl (for linking to specific casts) and authorProfileUrl (for linking to user profiles)
-- When citing a cast, ALWAYS use castUrl, NEVER use profileUrl for cast citations
-
-# ACCOUNT SELECTION CRITERIA
-- Only include accounts that appear in the cast results, unless:
-  - The user is specifically asking for information about a particular person/username
-  - The account's bio contains highly relevant information to the query (e.g., for a query about "prediction markets", include accounts whose bios mention "prediction markets")
-  - The account works at a company or has a role specifically relevant to the query (e.g., product managers at relevant companies)
-- Even in these edge cases, prioritize accounts that also have casts in the results
-- Do not include accounts that only match on the handle unless specifically requested
-
-# PERSON-SPECIFIC QUERY HANDLING
-- If the query is about a specific person (e.g., "tell me about username"), ONLY include:
-  - Casts authored by that specific person
-  - Never return dwr, ted, rish, or proxystudio as a result unless there's no way to answer question without mentioning them
-  - Casts that explicitly mention or discuss that specific person
-  - Do NOT include casts that merely contain the person's name/username in an unrelated context
-  - If you're unsure whether a cast is actually about the person in question, exclude it
-  - Be strict about this filtering - when in doubt, exclude rather than include
-
-# MARKDOWN FORMATTING
-- Use \`##\` headings for major sections and \`###\` subheadings if needed.
-- Use **bold** for important names or concepts.
-- Use bullet points for short lists.
-- Use \`>\` blockquotes for direct quotes (with a [View cast](castUrl) link).
-- Separate major sections with \`---\`.
-- Always link usernames to profile URLs in the text.
-- When citing casts, ALWAYS use castUrl, NEVER profileUrl.
+# FORMATTING
+- Use markdown formatting to structure your response.
+- Use blockquotes (>) for cast quotes.
+- Bold important concepts or findings.
+- Keep your response focused and concise while being comprehensive.
+- If no relevant information is found, clearly state that you weren't able to find relevant information.
 
 ---
 
@@ -253,9 +148,8 @@ export async function POST(request: Request) {
     // Log structured data format
     const accountsCount = results.accounts?.length || 0;
     const castsCount = results.casts?.length || 0;
-    const vectorMatchesCount = results.stats?.vectorResultsCount || 0;
     
-    console.log(`Agent API: Processing ${accountsCount} accounts and ${castsCount} casts (${vectorMatchesCount} from vector search) for query: "${query}"`);
+    console.log(`Agent API: Processing ${accountsCount} accounts and ${castsCount} casts for query: "${query}"`);
     
     // Format the prompt for the model using the original or processed query
     const prompt = formatPrompt(originalQuery || query, results);
@@ -290,7 +184,7 @@ export async function POST(request: Request) {
               messages: [
                 {
                   role: "system",
-                  content: "You are an AI assistant that analyzes search results about builders in web3 and produces intelligence-style reports."
+                  content: "You are an AI assistant that analyzes search results and produces helpful responses."
                 },
                 {
                   role: "user", 
