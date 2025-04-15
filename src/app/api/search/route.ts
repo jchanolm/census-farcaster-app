@@ -1,41 +1,25 @@
 import { NextResponse } from 'next/server';
-import { runQuery } from '@/lib/neo4j';
-import OpenAI from "openai";
+import { getDatabase } from '../../../lib/mongodb';
 
 // Enable dynamic rendering for this route
 export const dynamic = 'force-dynamic';
 
-// Initialize OpenAI client for embeddings
-const openai = new OpenAI({
-  baseURL: 'https://api.deepinfra.com/v1/openai',
-  apiKey: process.env.DEEPINFRA_API_KEY,
-});
-
 /**
- * Generate embeddings using BAAI/bge-m3 model
- * @param text - The text to embed
- * @returns A vector of embeddings
+ * Compute a combined score that gives weight to relevance, fcCred, and inverse follower count
  */
-async function generateEmbedding(text: string) {
-  try {
-    // Clean the text by removing problematic characters before embedding
-    const cleanedText = text.replace(/[\/\-\\]/g, ' ').trim();
-    
-    const embedding = await openai.embeddings.create({
-      model: "BAAI/bge-m3",
-      input: cleanedText,
-      encoding_format: "float",
-    });
-    
-    return embedding.data[0].embedding;
-  } catch (error) {
-    console.error('Error generating embedding:', error);
-    throw new Error('Failed to generate embedding');
-  }
+function computeCombinedScore({
+  relevanceScore = 0,
+  fcCred = 0,
+  followerCount = 0
+}) {
+  // Avoid division by zero
+  const invFollower = followerCount > 0 ? 1 / followerCount : 1;
+  // Example weighting:
+  return (0.5 * relevanceScore) + (0.3 * fcCred) + (0.2 * invFollower);
 }
 
 /**
- * Handles the search query for Farcaster network builders using vector search
+ * Handles the search query for Farcaster network builders using MongoDB
  * @param request - The incoming HTTP request
  * @returns JSON response with search results or error
  */
@@ -55,6 +39,7 @@ export async function POST(request: Request) {
     // Store original query
     const originalQuery = query.trim();
     console.log(`Processing query: ${originalQuery}`);
+    
     // Remove stopwords from the query to improve search quality
     const stopwords = [
       'a', 'an', 'and', 'are', 'as', 'at', 'be', 'but', 'by', 'for', 'if', 'in', 
@@ -75,128 +60,240 @@ export async function POST(request: Request) {
     
     // Use the original query if all words were stopwords
     const effectiveQuery = cleanedQuery || originalQuery.replace(/[\/\-\\]/g, ' ');
-    // Step 1: Generate embedding for the query using BAAI/bge-m3
-    console.log('Generating embedding for query using BAAI/bge-m3...');
-    const queryEmbedding = await generateEmbedding(originalQuery);
     
-    if (!queryEmbedding || !Array.isArray(queryEmbedding)) {
-      return NextResponse.json({ 
-        error: 'Embedding generation failed', 
-        details: 'Could not generate valid embeddings for the query' 
-      }, { status: 500 });
+    // Get database connection
+    const db = await getDatabase();
+    
+    // Search accounts collection with your existing Atlas Search index
+    let accountResults = [];
+    try {
+      accountResults = await db.collection('farcaster_users')
+        .aggregate([
+          {
+            $search: {
+              "index": "fc-accounts", // Your existing Atlas Search index name
+              "text": {
+                "query": effectiveQuery,
+                "fuzzy": {
+                  "maxEdits": 2,
+                  "prefixLength": 1
+                }
+              }
+            }
+          },
+          {
+            $limit: 3 // Limited to 3 accounts as requested
+          },
+          {
+            $addFields: {
+              "score": { $meta: "searchScore" }
+            }
+          }
+        ])
+        .toArray();
+      
+      console.log(`Found ${accountResults.length} account matches using Atlas Search`);
+      
+      // Debug: If no results found, try a direct lookup
+      if (accountResults.length === 0) {
+        const directLookup = await db.collection('farcaster_users')
+          .find({ 
+            username: { $regex: new RegExp(effectiveQuery, 'i') } 
+          })
+          .limit(3)
+          .toArray();
+        
+        console.log(`Direct lookup found: ${directLookup.length} matches for username containing '${effectiveQuery}'`);
+        
+        if (directLookup.length > 0) {
+          // If direct lookup finds something, add it to results
+          accountResults = directLookup;
+          // Add a mock score for compatibility
+          accountResults.forEach(account => account.score = 10);
+          console.log("Using direct lookup results instead of search");
+        }
+      }
+    } catch (error) {
+      console.error('Error searching accounts with Atlas Search:', error);
+      // Fallback to standard text search if Atlas Search fails
+      try {
+        accountResults = await db.collection('farcaster_users')
+          .find(
+            { $text: { $search: effectiveQuery } },
+            { projection: { score: { $meta: "textScore" } } }
+          )
+          .sort({ score: { $meta: "textScore" } })
+          .limit(3)
+          .toArray();
+        
+        console.log(`Fallback: Found ${accountResults.length} account matches using text search`);
+      } catch (secondError) {
+        console.error('Fallback search also failed:', secondError);
+      }
     }
     
-    // Step 2: Use vector search with separate queries for accounts and casts
-    const combinedVectorSearchQuery = `
-    // Cast search with vector similarity using embeddings
-    CALL db.index.fulltext.queryNodes('casts', $effectiveQuery) YIELD node as castNode, score as score 
-    WHERE score >= 5
-    ORDER BY score DESC 
-    LIMIT 200
-    MATCH (castNode)-[]-(real:RealAssNigga:Account)
-    WITH 
-      castNode.author as username,
-      "https://warpcast.com/" + castNode.author as profileUrl,
-      real.bio as bio,
-      real.channels as userChannels,
-      real.framesCreated as framesCreated,
-      real.followerCount as followerCount,
-      real.fcCred as fcCred,
-      real.state as state,
-      real.city as city,
-      real.country as country,
-      NULL as pfpUrl,
-      castNode.text as castContent,
-      castNode.castUrl as castUrl, 
-      castNode.timestamp as timestamp,
-      castNode.likesCount as likesCount,
-      castNode.mentionedChannels as mentionedChannels,
-      castNode.mentionedUsers as mentionedUsers,
-      score,
-      'cast_match' as matchType
-    WHERE castContent IS NOT NULL
-    RETURN username, bio, followerCount, fcCred, state, city, country, pfpUrl, castContent, timestamp, likesCount, mentionedChannels, mentionedUsers, score, matchType
-    UNION ALL
-
-    // Account search with fulltext search using cleaned query
-    CALL db.index.fulltext.queryNodes("accounts", $effectiveQuery) YIELD node as accountNode, score 
-    WHERE score > 4
-    WITH 
-      accountNode.username as username,
-      "https://warpcast.com/" + accountNode.username as profileUrl,
-      accountNode.bio as bio,
-      accountNode.framesCreated as framesCreated, 
-      accountNode.followerCount as followerCount,
-      accountNode.ogInteractionsCount as fcCred,
-      accountNode.state as state,
-      accountNode.city as city,
-      accountNode.channels as userChannels,
-      accountNode.country as country,
-      accountNode.pfpUrl as pfpUrl,
-      NULL as castContent,
-      NULL as timestamp,
-      NULL as likesCount,
-      NULL as mentionedChannels,
-      NULL as mentionedUsers,
-      score,
-      'account_match' as matchType
-    RETURN username, bio, followerCount, fcCred, state, city, country, pfpUrl, castContent, timestamp, likesCount, mentionedChannels, mentionedUsers, score, matchType
-    ORDER BY score DESC
-    LIMIT 3
-    `;
-    
-    console.log('Running vector search queries...');
-    const vectorResults = await runQuery(combinedVectorSearchQuery, { 
-      effectiveQuery: effectiveQuery,
-      queryEmbedding: queryEmbedding 
-    });
-    console.log(`Vector search returned ${vectorResults.length} total results`);
-    
-    // Process the results
-    const processedResults = vectorResults.map(record => {
-      const plainObj: Record<string, any> = {};
-      const keys = record.keys.map(key => String(key));
-      keys.forEach(key => {
-        plainObj[key] = record.get(key);
-      });
-      return plainObj;
-    });
-    
-    // Calculate combined score for each result
-    processedResults.forEach(item => {
-      // Default values if fields are missing
-      const score = item.score || 0;
-      const followerCount = Number(item.followerCount || 1);
-      const fcCred = Number(item.fcCred || 0);
+    // Search casts collection with your existing Atlas Search index
+    let castResults = [];
+    try {
+      castResults = await db.collection('casts')
+        .aggregate([
+          {
+            $search: {
+              "index": "text", // Your existing Atlas Search index name
+              "text": {
+                "query": effectiveQuery,
+                "fuzzy": {
+                  "maxEdits": 2,
+                  "prefixLength": 1
+                }
+              }
+            }
+          },
+          {
+            $limit: 100
+          },
+          {
+            $addFields: {
+              "score": { $meta: "searchScore" }
+            }
+          }
+        ])
+        .toArray();
       
-      // Avoid dividing by zero
-      const invFollowerCount = (followerCount <= 0) ? 1 : (1 / followerCount);
-      
-      // Combine the scores with weighting
-      item.combinedScore = 0.5 * score + 
-                          0.3 * fcCred + 
-                          0.2 * invFollowerCount;
-    });
-    
-    // Split into accounts and casts
-    const accountResults = processedResults
-      .filter(item => item.matchType === 'account_match')
-      .sort((a, b) => b.combinedScore - a.combinedScore);
-      
-    const castResults = processedResults
-      .filter(item => item.matchType === 'cast_match')
-      .sort((a, b) => b.combinedScore - a.combinedScore);
+      console.log(`Found ${castResults.length} cast matches using Atlas Search`);
+    } catch (error) {
+      console.error('Error searching casts with Atlas Search:', error);
+      // Fallback to standard text search if Atlas Search fails
+      try {
+        castResults = await db.collection('casts')
+          .find(
+            { $text: { $search: effectiveQuery } },
+            { projection: { score: { $meta: "textScore" } } }
+          )
+          .sort({ score: { $meta: "textScore" } })
+          .limit(100)
+          .toArray();
+        
+        console.log(`Fallback: Found ${castResults.length} cast matches using text search`);
+      } catch (secondError) {
+        console.error('Fallback search also failed:', secondError);
+        
+        // Last resort: try a direct regex search on the text field
+        try {
+          castResults = await db.collection('casts')
+            .find({ 
+              text: { $regex: new RegExp(effectiveQuery, 'i') } 
+            })
+            .limit(50)
+            .toArray();
+            
+          // Add a mock score for compatibility
+          castResults.forEach(cast => cast.score = 10);
+          
+          console.log(`Last resort: Found ${castResults.length} cast matches using regex search`);
+        } catch (thirdError) {
+          console.error('All search methods failed for casts:', thirdError);
+        }
+      }
+    }
     
     console.log(`Found ${accountResults.length} account matches and ${castResults.length} cast matches`);
     
+    // Process account results
+    const processedAccounts = accountResults.map(account => {
+      const username = account.username || 'unknown';
+      const bio = account.bio || '';
+      const followerCount = account.followerCount || 0;
+      const followingCount = account.followingCount || 0;
+      const fcCred = account.fcCredScore || 0;
+      const relevanceScore = account.score || 0;
+      const fid = account.fid || 0;
+      
+      // Compute the combined score
+      const combinedScore = computeCombinedScore({ 
+        relevanceScore, 
+        fcCred, 
+        followerCount 
+      });
+      
+      // Ensure profileUrl is correctly formatted
+      const profileUrl = `https://warpcast.com/${username}`;
+      
+      return {
+        username: username.startsWith('!') ? `fid:${fid}` : username,
+        bio,
+        followerCount,
+        followingCount,
+        fcCred,
+        relevanceScore,
+        combinedScore,
+        profileUrl,
+        fid,
+        channels: account.channels || [],
+        country: account.country,
+        city: account.city,
+        state: account.state,
+        ogLikesCount: account.ogLikesCount || 0,
+        ogRecastsCount: account.ogRecastsCount || 0,
+        ogFollowsCount: account.ogFollowsCount || 0,
+        isLegit: account.isLegit || false
+      };
+    });
+    
+    // Process cast results
+    const processedCasts = castResults.map(cast => {
+      const username = cast.author || 'unknown';
+      const castContent = cast.text || '';
+      const likesCount = cast.likeCount || 0;
+      const timestamp = cast.timestamp || cast.createdAt || '';
+      const hash = cast.hash || '';
+      const authorFid = cast.authorFid || 0;
+      
+      // Create cast URL
+      const castUrl = `https://warpcast.com/${username}/${hash}`;
+      
+      // Author profile URL
+      const authorProfileUrl = `https://warpcast.com/${username}`;
+      
+      const mentionedChannels = cast.mentionedChannelIds || [];
+      const mentionedUsers = cast.mentionedUsernames || [];
+      const relevanceScore = cast.score || 0;
+      const replyCount = cast.replyCount || 0;
+      
+      const combinedScore = computeCombinedScore({ 
+        relevanceScore, 
+        fcCred: 0,
+        followerCount: 0
+      });
+      
+      return {
+        username,
+        castContent,
+        likesCount,
+        timestamp,
+        mentionedChannels,
+        mentionedUsers,
+        relevanceScore,
+        combinedScore,
+        castUrl,
+        authorProfileUrl,
+        hash,
+        replyCount
+      };
+    });
+    
+    // Sort by combined score
+    const sortedAccounts = processedAccounts.sort((a, b) => b.combinedScore - a.combinedScore);
+    const sortedCasts = processedCasts.sort((a, b) => b.combinedScore - a.combinedScore);
+    
     // Final results object
     const results = {
-      accounts: accountResults,
-      casts: castResults,
+      accounts: sortedAccounts,
+      casts: sortedCasts,
       stats: {
-        totalResults: accountResults.length + castResults.length,
-        accountMatches: accountResults.length,
-        castMatches: castResults.length
+        totalResults: sortedAccounts.length + sortedCasts.length,
+        accountMatches: sortedAccounts.length,
+        castMatches: sortedCasts.length
       }
     };
     
@@ -205,9 +302,9 @@ export async function POST(request: Request) {
       originalQuery: originalQuery,
       query: originalQuery, 
       results,
-      totalResults: accountResults.length + castResults.length,
-      castMatches: castResults.length,
-      accountMatches: accountResults.length
+      totalResults: sortedAccounts.length + sortedCasts.length,
+      castMatches: sortedCasts.length,
+      accountMatches: sortedAccounts.length
     });
     
   } catch (error) {
