@@ -150,7 +150,7 @@ export async function POST(request: Request) {
             }
           },
           {
-            $limit: 150
+            $limit: 100
           },
           {
             $addFields: {
@@ -171,7 +171,7 @@ export async function POST(request: Request) {
             { projection: { score: { $meta: "textScore" } } }
           )
           .sort({ score: { $meta: "textScore" } })
-          .limit(150)
+          .limit(100)
           .toArray();
         
         console.log(`Fallback: Found ${castResults.length} cast matches using text search`);
