@@ -41,10 +41,19 @@ function formatPrompt(query: string, results: any) {
       username,
       bio,
       followerCount,
+      followingCount: account.followingCount || 0,
       fcCred,
       relevanceScore,
       combinedScore, // store it for reference
-      profileUrl // User's profile URL
+      profileUrl, // User's profile URL
+      channels: account.channels || [],
+      country: account.country || null,
+      city: account.city || null,
+      state: account.state || null,
+      ogLikesCount: account.ogLikesCount || 0,
+      ogRecastsCount: account.ogRecastsCount || 0,
+      ogFollowsCount: account.ogFollowsCount || 0,
+      isLegit: account.isLegit || false
     };
   });
   
@@ -99,12 +108,29 @@ You are analyzing Farcaster network data to provide the best possible answer to 
 # CONTEXT
 The user searched for: "${query}"
 
-The dataset includes Farcaster profiles (accounts) and posts (casts). Your goal is to analyze these results and deliver the most helpful and complete response directly addressing the query.
+You are receiving context relevant to user's search, including Farcaster profiles (accounts) and posts (casts). Your goal is to analyze these results and deliver the most helpful and complete response directly addressing the query.
 
 # DATA STRUCTURE
 The search results include:
 - ${sortedAccounts.length} Farcaster user profiles
 - ${sortedCasts.length} Farcaster casts (posts)
+
+# AVAILABLE DATA FIELDS
+For each account, you have access to:
+- username, bio, follower/following counts
+- fcCred (a measure of reputation/influence)
+- channels they participate in
+- location data (country, city, state)
+- engagement metrics (likes, recasts, follows)
+- verification status (isLegit)
+
+For each cast (post), you have access to:
+- username of author
+- full cast content
+- engagement metrics (likes count)
+- timestamp
+- mentioned channels and users
+- relevance to the query
 
 # RESPONSE GUIDELINES
 1. Provide a direct, helpful answer to the user's query.
@@ -112,7 +138,22 @@ The search results include:
 3. Quote relevant casts when they provide useful information.
 4. Mention relevant Farcaster users when appropriate.
 5. When mentioning users, link to their profiles using: [username](https://warpcast.com/username)
-6. When quoting casts, include a link to the cast: [View cast](https://warpcast.com/username/hash)
+6. When quoting casts, include a link to the cast: [View cast](castUrl)
+7. Focus on providing substantive information rather than just listing users.
+8. Look beyond just the highest-ranked results - important information may be in lower-ranked items.
+9. Consider all available data points, even if they aren't the most prominent in the results.
+
+# SPECIAL INSTRUCTIONS FOR USER-SPECIFIC QUERIES
+If the query appears to be about a specific Farcaster user (e.g., "who is username", "about username", or just "username"):
+1. Focus your response primarily on that user's account details
+2. Include casts created by that user (where their username is the author)
+3. Include casts that directly reference or mention that user
+4. Structure your response as a user profile with:
+   - Brief intro based on bio and profile information
+   - Key topics they discuss
+   - Notable posts or insights (with direct quotes)
+   - Any projects or work they mention
+   - Brief summary of their Farcaster presence (engagement, followers, etc.)
 
 # FORMATTING
 - Use markdown formatting to structure your response.
@@ -120,6 +161,7 @@ The search results include:
 - Bold important concepts or findings.
 - Keep your response focused and concise while being comprehensive.
 - If no relevant information is found, clearly state that you weren't able to find relevant information.
+- Write in a professional, analytical tone.
 
 ---
 
@@ -184,7 +226,7 @@ export async function POST(request: Request) {
               messages: [
                 {
                   role: "system",
-                  content: "You are an AI assistant that analyzes search results and produces helpful responses."
+                  content: "You are an AI assistant that analyzes search results about Farcaster users and content to produce helpful, focused responses."
                 },
                 {
                   role: "user", 
