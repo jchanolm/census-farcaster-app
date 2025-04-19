@@ -108,10 +108,9 @@ You are analyzing Farcaster network data to provide the best possible answer to 
 # CONTEXT
 The user searched for: "${query}"
 
-You are receiving context relevant to user's search, including Farcaster profiles (accounts) and posts (casts). Your goal is to analyze these results and deliver the most helpful and complete response directly addressing the query.
+You are receiving context relevant to user's search, including Farcaster posts (casts). Your goal is to analyze these results and deliver the most helpful and complete response directly addressing the query.
 # DATA STRUCTURE
 The search results include:
-- ${sortedAccounts.length} Farcaster user profiles
 - ${sortedCasts.length} Farcaster casts (posts)
 
 # AVAILABLE DATA FIELDS
