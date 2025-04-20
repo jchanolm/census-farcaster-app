@@ -6,6 +6,8 @@ import { sdk } from '@farcaster/frame-sdk';
 import SearchInterface from '@/components/SearchInterface';
 
 export default function Home() {
+  // Maintenance mode - commenting out normal app functionality
+  /*
   const [isLoading, setIsLoading] = useState(true);
   const [userData, setUserData] = useState<{ fid: number; username?: string; displayName?: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -85,6 +87,31 @@ export default function Home() {
         userName={userData?.username} 
         displayName={userData?.displayName} 
       />
+    </div>
+  );
+  */
+
+  // Maintenance mode message
+  return (
+    <div className="fixed inset-0 flex items-center justify-center bg-black text-white p-6">
+      <div className="bg-[#121620] rounded-lg border border-gray-800 p-8 max-w-md w-full text-center">
+        <div className="flex flex-col items-center mb-6">
+          <svg className="w-16 h-16 text-gray-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+          </svg>
+          <h2 className="text-2xl font-bold text-gray-300">Down for Maintenance</h2>
+        </div>
+        <p className="text-gray-400 mb-6">
+          We're currentl improving our data and agents to improve your experience.
+          Please check back later.
+        </p>
+        <div className="w-full bg-gray-800 rounded-full h-2.5 mb-4">
+          <div className="bg-blue-600 h-2.5 rounded-full w-3/4 animate-pulse"></div>
+        </div>
+        <p className="text-sm text-gray-500">
+          We apologize for any inconvenience this may cause.
+        </p>
+      </div>
     </div>
   );
 }
