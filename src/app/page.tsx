@@ -102,7 +102,7 @@ export default function Home() {
           <h2 className="text-2xl font-bold text-gray-300">Down for Maintenance</h2>
         </div>
         <p className="text-gray-400 mb-6">
-          We're currentl improving our data and agents to improve your experience.
+          We're currently improving our data and agents to improve your experience.
           Please check back later.
         </p>
         <div className="w-full bg-gray-800 rounded-full h-2.5 mb-4">
