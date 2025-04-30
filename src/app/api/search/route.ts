@@ -171,7 +171,7 @@ export async function POST(request: Request) {
             { projection: { score: { $meta: "textScore" } } }
           )
           .sort({ score: { $meta: "textScore" } })
-          .limit(100)
+          .limit(250)
           .toArray();
         
         console.log(`Fallback: Found ${castResults.length} cast matches using text search`);
@@ -260,19 +260,14 @@ export async function POST(request: Request) {
       const relevanceScore = cast.score || 0;
       const replyCount = cast.replyCount || 0;
       
-      const combinedScore = computeCombinedScore({ 
-        relevanceScore, 
-        fcCred: 0,
-        followerCount: 0
-      });
+      // For casts, just use the score directly as relevance
+      const combinedScore = relevanceScore;
       
       return {
         username,
         castContent,
         likesCount,
         timestamp,
-        mentionedChannels,
-        mentionedUsers,
         relevanceScore,
         combinedScore,
         castUrl,

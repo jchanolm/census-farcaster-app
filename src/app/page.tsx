@@ -6,8 +6,6 @@ import { sdk } from '@farcaster/frame-sdk';
 import SearchInterface from '@/components/SearchInterface';
 
 export default function Home() {
-  // Maintenance mode - commenting out normal app functionality
-  /*
   const [isLoading, setIsLoading] = useState(true);
   const [userData, setUserData] = useState<{ fid: number; username?: string; displayName?: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -89,9 +87,8 @@ export default function Home() {
       />
     </div>
   );
-  */
 
-  // Maintenance mode message
+  /* Maintenance mode message - commented out but available if needed
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black text-white p-6">
       <div className="bg-[#121620] rounded-lg border border-gray-800 p-8 max-w-md w-full text-center">
@@ -114,4 +111,5 @@ export default function Home() {
       </div>
     </div>
   );
+  */
 }
